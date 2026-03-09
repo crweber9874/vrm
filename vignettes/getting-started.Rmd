@@ -1,0 +1,138 @@
+---
+title: "Getting Started with vrm"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with vrm}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+## Overview
+
+`vrm` provides a unified interface for regression modeling, posterior prediction,
+counterfactual inference, and publication-quality visualization. This vignette
+walks through the core workflow using electoral contestation survey data.
+
+## Data Preparation
+
+```{r}
+library(vrm)
+library(dplyr)
+
+# Load example data (included with package)
+data(wss20, package = "vrm")
+
+# Rescale age to [0,1]
+wss20$age_scaled <- zero_one(wss20$age)
+
+# Bulk recode items using recode rules
+rules <- list(
+  list(column = "raw_item1", recode_rules = five_r, new_column = "item1"),
+  list(column = "raw_item2", recode_rules = four_r, new_column = "item2")
+)
+wss20 <- recodeList(wss20, rules)
+```
+
+## Propensity Score Weighting
+
+For observational pre/post designs, use `ps_weight()` to estimate inverse
+probability of treatment weights (IPTW):
+
+```{r}
+ps_out <- ps_weight(
+  wss20,
+  treatment = "prepost",
+  formula = ~ female + latino + white + black + college + age_scaled,
+  methods = "glm"
+)
+
+# The weighted data is in ps_out$data
+wss20 <- ps_out$data
+```
+
+## Model Fitting
+
+Fit a Bayesian ordinal model with a pre/post × vote interaction:
+
+```{r}
+fit_ord <- brms.ordinal(
+  dv = "contestation_value",
+  iv = "prepost * vote_trump",
+  data = wss20,
+  cores = 4,
+  chains = 4,
+  iter = 2000
+)
+```
+
+Or a linear model:
+
+```{r}
+fit_lin <- brms.linear(
+  dv = "contestation_value",
+  iv = "prepost * vote_trump",
+  data = wss20,
+  cores = 4
+)
+```
+
+## Posterior Predictions
+
+Generate predicted means across conditions:
+
+```{r}
+preds <- posterior_means(
+  fit_lin,
+  iv_name = "prepost",
+  moderator = "vote_trump",
+  data = wss20
+)
+```
+
+## Counterfactual Analysis (G-Computation)
+
+Create counterfactual data and compute individual treatment effects:
+
+```{r}
+# Generate observed + counterfactual rows
+cf_data <- generate_counterfactual_data(wss20, treatment_var = "prepost")
+
+# Get posterior predictions for both conditions
+library(tidybayes)
+preds_long <- cf_data %>%
+  add_epred_draws(fit_lin, ndraws = 500)
+
+# Calculate individual-level effects
+ind_effects <- calculate_individual_effects(
+  preds_long,
+  treatment_var = "prepost",
+  group_vars = c("vote_trump")
+)
+```
+
+## Visualization
+
+```{r}
+library(ggplot2)
+
+# Marginal effects for ordinal model
+ggMargins_categories(fit_ord, data = wss20)
+
+# Ridgeline plot of posterior draws
+gg_posterior_ridges(fit_lin, data = wss20)
+```
+
+## Summary
+
+The typical `vrm` workflow is:
+
+1. **Recode** survey data with `recodeList()` / `zero_one()`
+2. **Weight** (if observational) with `ps_weight()`
+3. **Fit** models with `brms.ordinal()`, `brms.linear()`, etc.
+4. **Predict** with `posterior_means()` / `posterior_pme()`
+5. **Counterfactual** analysis with `generate_counterfactual_data()` + `calculate_individual_effects()`
+6. **Visualize** with `ggMargins_categories()`, sunflower plots, ridgeplots, etc.

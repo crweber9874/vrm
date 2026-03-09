@@ -1,0 +1,49 @@
+Package: vrm
+Title: Visualization and Regression Modeling Utilities
+Version: 0.1.0
+Authors@R:
+    person("Christopher", "Weber", , "chrisweber@arizona.edu", role = c("aut", "cre"))
+Description: A general-purpose toolkit for Bayesian and frequentist regression
+    analysis workflows. Includes functions for model fitting (brms wrappers,
+    ordered logit/probit), posterior prediction and marginal effects,
+    counterfactual analysis (g-computation), propensity score weighting,
+    exploratory data analysis, data recoding, and publication-ready visualization
+    (sunflower plots, ridgeplots, forest plots, marginal effects panels).
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+LazyData: true
+Depends:
+    R (>= 4.1.0)
+Imports:
+    stats,
+    dplyr,
+    tidyr,
+    ggplot2,
+    rlang,
+    tibble,
+    purrr
+Suggests:
+    brms,
+    tidybayes,
+    MASS,
+    ggridges,
+    ggExtra,
+    patchwork,
+    cowplot,
+    gt,
+    gbm,
+    randomForest,
+    mice,
+    shiny,
+    bslib,
+    DT,
+    GGally,
+    corrplot,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+URL: https://github.com/chrisweber/vrm
+BugReports: https://github.com/chrisweber/vrm/issues
