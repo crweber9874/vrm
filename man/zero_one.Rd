@@ -2,18 +2,22 @@
 % Please edit documentation in R/util_common_recodes.R
 \name{zero_one}
 \alias{zero_one}
-\title{Rescale variable to 0-1 range}
+\title{Rescale Variable to 0-1 Range}
 \usage{
 zero_one(x, na.rm = TRUE)
 }
 \arguments{
-\item{x}{A numeric vector}
+\item{x}{A numeric vector.}
 
-\item{na.rm}{Logical; should missing values be removed? Default is TRUE}
+\item{na.rm}{Logical; should missing values be removed? Default is TRUE.}
 }
 \value{
-A numeric vector rescaled to 0-1 range
+A numeric vector rescaled to \code{[0, 1]}.
 }
 \description{
-Rescales a numeric vector to range from 0 to 1 using min-max normalization
+Rescales a numeric vector to range from 0 to 1 using min-max normalization.
+}
+\examples{
+zero_one(c(10, 20, 30, 40, 50))
+# [1] 0.00 0.25 0.50 0.75 1.00
 }

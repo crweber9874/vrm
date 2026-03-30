@@ -2,19 +2,21 @@
 % Please edit documentation in R/zeroOne.R
 \name{zero.one}
 \alias{zero.one}
-\title{Create a zero one normalization}
+\title{Min-Max Normalize to Zero-One Range}
 \usage{
 zero.one(x)
 }
 \arguments{
-\item{numeric}{value}
+\item{x}{A numeric vector.}
 }
 \value{
-A standardized 0-1 variable
+A numeric vector rescaled to \code{[0, 1]}.
 }
 \description{
-Create a zero one normalization
+Rescales a numeric vector to the \code{[0, 1]} range using min-max
+normalization.
 }
 \examples{
-#rnorm(10) \%>\% zero.one()
+zero.one(c(10, 20, 30, 40, 50))
+# [1] 0.00 0.25 0.50 0.75 1.00
 }

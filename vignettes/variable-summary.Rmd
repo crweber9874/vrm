@@ -1,0 +1,548 @@
+---
+title: "Variable Summary: 2020 WSS"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Variable Summary: 2020 WSS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+## Overview
+
+This vignette provides a codebook-style summary of all variables constructed
+in the `data-builder` vignette. It uses `vrm::codebook()` to auto-generate
+the codebook from the same `recode_rules` list format used by `recodeList()`.
+
+```{r load, echo = FALSE}
+library(dplyr)
+library(gt)
+library(vrm)
+```
+
+## Build the Codebook
+
+The `codebook()` function accepts the same list-of-lists structure as
+`recodeList()`, with optional `section` and `description` fields. It infers
+the response metric from the recode rules automatically.
+
+```{r rules}
+wss20_rules <- list(
+
+  # ── Demographics ──
+  list(column = "race",    recode_rules = c("1"=0,"2"=1,"3"=0,"4"=0,"5"=0), new_column = "black",
+       section = "Demographics", description = "1 = Black"),
+  list(column = "race",    recode_rules = c("1"=1,"2"=0,"3"=0,"4"=0,"5"=0), new_column = "white",
+       section = "Demographics", description = "1 = White"),
+  list(column = "race",    recode_rules = c("1"=0,"2"=0,"3"=1,"4"=0,"5"=0), new_column = "latino",
+       section = "Demographics", description = "1 = Latino/a"),
+  list(column = "race",    recode_rules = c("1"=0,"2"=0,"3"=0,"4"=1,"5"=0), new_column = "asian",
+       section = "Demographics", description = "1 = Asian"),
+  list(column = "race",    recode_rules = c("1"=0,"2"=0,"3"=0,"4"=0,"5"=1), new_column = "american_indian",
+       section = "Demographics", description = "1 = American Indian"),
+  list(column = "gender",  recode_rules = c("2"=1,"1"=0), new_column = "female",
+       section = "Demographics", description = "1 = female"),
+  list(column = "marstat", recode_rules = c("1"=1,"2"=0,"3"=0,"4"=0,"5"=0,"6"=0), new_column = "married",
+       section = "Demographics", description = "1 = married"),
+  list(column = "educ",    recode_rules = c("1"=0,"2"=0,"3"=0,"4"=0,"5"=1,"6"=1), new_column = "college",
+       section = "Demographics", description = "1 = BA or higher"),
+
+  # ── Experimental Treatments ──
+  list(column = "WSS33_split",   recode_rules = c("2"="National","1"=1,"0"="State"), new_column = "efficacy_treat",
+       section = "Treatments", description = "National vs State"),
+  list(column = "WSS28_split",   recode_rules = c("2"="Elected Officials","1"="People"), new_column = "ideology_1_treat",
+       section = "Treatments", description = "Elected Officials vs People"),
+  list(column = "WSS29_split",   recode_rules = c("2"="People_State","1"="People"), new_column = "ideology_2_treat",
+       section = "Treatments", description = "People_State vs People"),
+  list(column = "WSS40_1_split", recode_rules = c("1"="Violent March","2"="March"), new_column = "violent_march_treat",
+       section = "Treatments", description = "Violent March vs March"),
+  list(column = "WSS40_5_split", recode_rules = c("1"="Social Media Criticism","2"="Criticism"), new_column = "socialmedia_criticism_treat",
+       section = "Treatments", description = "Social Media Criticism vs Criticism"),
+  list(column = "WSS47_split",   recode_rules = c("1"="Federal","2"="State_or_Local"), new_column = "covid_treat",
+       section = "Treatments", description = "Federal vs State_or_Local"),
+  list(column = "WSS54_split",   recode_rules = c("1"="pre","2"="post"), new_column = "institution_treat",
+       section = "Treatments", description = "Pre vs post institutional trust"),
+  list(column = "AZ_split",      recode_rules = c("1"="partisan","2"="hispanic"), new_column = "ft_arizona_treat",
+       section = "Treatments", description = "Partisan vs Hispanic"),
+  list(column = "AZ310_split",   recode_rules = c("1"="control","2"="information"), new_column = "senate_az_treat",
+       section = "Treatments", description = "Control vs Information"),
+
+  # ── Party / Ideology ──
+  list(column = "pid7", recode_rules = c("1"=1,"2"=1,"3"=1,"4"=2,"5"=3,"6"=3,"7"=3), new_column = "party_identification3",
+       section = "Party/Ideology", description = "1=Dem, 2=Ind, 3=Rep"),
+  list(column = "pid7", recode_rules = c("1"=1,"2"=2,"3"=3,"4"=4,"5"=5,"6"=6,"7"=7), new_column = "party_identification7",
+       section = "Party/Ideology", description = "Full 7-pt PID"),
+  list(column = "ideo5", recode_rules = c("1"=1,"2"=2,"3"=3,"4"=4,"5"=5), new_column = "ideology",
+       section = "Party/Ideology", description = "5-pt liberal-conservative"),
+  list(column = "religpew", recode_rules = c("1"=1,"2"=1,"3"=1,"4"=1,"5"=0,"6"=0,"7"=0,"8"=0,"9"=0,"10"=0,"11"=0,"12"=0), new_column = "christian",
+       section = "Party/Ideology", description = "1 = Protestant/Catholic"),
+  list(column = "pew_churatd", recode_rules = c("1"=6,"2"=5,"3"=4,"4"=3,"5"=2,"6"=1), new_column = "religiosity_attendance",
+       section = "Party/Ideology", description = "Reversed: higher = more attendance"),
+  list(column = "newsint", recode_rules = four_r, new_column = "political_interest",
+       section = "Party/Ideology", description = "Higher = more interest"),
+  list(column = "WSS06", recode_rules = seven_n, new_column = "risk_aversion",
+       section = "Party/Ideology", description = "7-pt risk scale"),
+
+  # ── Authoritarianism ──
+  list(column = "WSS07_1a", recode_rules = binary_01, new_column = "auth_1",
+       section = "Authoritarianism", description = "Forced-choice pair 1"),
+  list(column = "WSS07_1b", recode_rules = binary_10, new_column = "auth_2",
+       section = "Authoritarianism", description = "Forced-choice pair 2"),
+  list(column = "WSS07_1c", recode_rules = binary_01, new_column = "auth_3",
+       section = "Authoritarianism", description = "Forced-choice pair 3"),
+  list(column = "WSS07_1d", recode_rules = binary_01, new_column = "auth_4",
+       section = "Authoritarianism", description = "Forced-choice pair 4"),
+
+  # ── Social Dominance Orientation ──
+  list(column = "WSS10_1", recode_rules = five_r, new_column = "sdo_group_inferiority",
+       section = "SDO", description = "Some groups are inferior"),
+  list(column = "WSS10_3", recode_rules = five_r, new_column = "sdo_antiequality_goal",
+       section = "SDO", description = "Equality should not be a goal"),
+  list(column = "WSS10_2", recode_rules = five_n, new_column = "sdo_unequal_deserving",
+       section = "SDO", description = "Some groups deserve less"),
+  list(column = "WSS10_4", recode_rules = five_n, new_column = "sdo_unequal_chance",
+       section = "SDO", description = "Groups do not have equal chance"),
+
+  # ── Racial Resentment ──
+  list(column = "WSS11_1", recode_rules = five_r, new_column = "rr_no_special_favors",
+       section = "Racial Resentment", description = "Should not get special favors"),
+  list(column = "WSS11_4", recode_rules = five_r, new_column = "rr_not_trying",
+       section = "Racial Resentment", description = "Need to try harder"),
+  list(column = "WSS11_2", recode_rules = five_n, new_column = "rr_deny_slavery_legacy",
+       section = "Racial Resentment", description = "Deny slavery legacy"),
+  list(column = "WSS11_3", recode_rules = five_n, new_column = "rr_deny_underdeserving",
+       section = "Racial Resentment", description = "Deny underdeserving of aid"),
+
+  # ── Intergroup Empathy ──
+  list(column = "WSS12_1", recode_rules = five_r, new_column = "empathy_tender_feelings",
+       section = "Empathy", description = "Tender feelings toward outgroup"),
+  list(column = "WSS12_2", recode_rules = five_r, new_column = "empathy_perspective_taking",
+       section = "Empathy", description = "Perspective taking"),
+  list(column = "WSS12_3", recode_rules = five_r, new_column = "empathy_imagine_before_criticize",
+       section = "Empathy", description = "Imagine before criticizing"),
+  list(column = "WSS12_4", recode_rules = five_r, new_column = "empathy_protective",
+       section = "Empathy", description = "Protective of outgroup"),
+
+  # ── Economic Individualism ──
+  list(column = "WSS13_1", recode_rules = five_r, new_column = "econ_indiv_hard_work_succeeds",
+       section = "Econ Individualism", description = "Hard work leads to success"),
+  list(column = "WSS13_3", recode_rules = five_r, new_column = "econ_indiv_blame_self",
+       section = "Econ Individualism", description = "Blame self for failure"),
+  list(column = "WSS13_5", recode_rules = five_r, new_column = "econ_indiv_effort_rewarded",
+       section = "Econ Individualism", description = "Effort is rewarded"),
+  list(column = "WSS13_2", recode_rules = five_n, new_column = "econ_indiv_deny_structural_barrier",
+       section = "Econ Individualism", description = "Deny structural barriers"),
+  list(column = "WSS13_4", recode_rules = five_n, new_column = "econ_indiv_deny_ambition_futility",
+       section = "Econ Individualism", description = "Deny ambition futility"),
+  list(column = "WSS13_6", recode_rules = five_n, new_column = "econ_indiv_deny_effort_futility",
+       section = "Econ Individualism", description = "Deny effort futility"),
+
+  # ── Affect / PANAS ──
+  list(column = "WSS14_1", recode_rules = four_n, new_column = "affect_anxiety",
+       section = "Affect", description = "Anxiety"),
+  list(column = "WSS14_2", recode_rules = four_n, new_column = "affect_anger",
+       section = "Affect", description = "Anger"),
+  list(column = "WSS14_3", recode_rules = four_n, new_column = "affect_hope",
+       section = "Affect", description = "Hope"),
+  list(column = "WSS14_4", recode_rules = four_n, new_column = "affect_pride",
+       section = "Affect", description = "Pride"),
+  list(column = "WSS14_5", recode_rules = four_n, new_column = "affect_disgust",
+       section = "Affect", description = "Disgust"),
+  list(column = "WSS14_6", recode_rules = four_n, new_column = "affect_enthusiasm",
+       section = "Affect", description = "Enthusiasm"),
+
+  # ── Institutional Trust ──
+  list(column = "WSS54_1", recode_rules = four_r, new_column = "trustCongress",
+       section = "Trust", description = "Trust in Congress"),
+  list(column = "WSS54_2", recode_rules = four_r, new_column = "trustPresident",
+       section = "Trust", description = "Trust in President"),
+  list(column = "WSS54_3", recode_rules = four_r, new_column = "trustSC",
+       section = "Trust", description = "Trust in Supreme Court"),
+  list(column = "WSS54_4", recode_rules = four_r, new_column = "trustGovernment",
+       section = "Trust", description = "Trust in federal government"),
+  list(column = "WSS54_5", recode_rules = four_r, new_column = "trustStateleg",
+       section = "Trust", description = "Trust in state legislature"),
+  list(column = "WSS54_6", recode_rules = four_r, new_column = "trustPolice",
+       section = "Trust", description = "Trust in police"),
+  list(column = "WSS54_7", recode_rules = four_r, new_column = "trustScience",
+       section = "Trust", description = "Trust in science"),
+
+  # ── Policy Attitudes ──
+  list(column = "WSS16_1",  recode_rules = five_r, new_column = "policy_trade",
+       section = "Policy", description = "Trade"),
+  list(column = "WSS16_2",  recode_rules = five_r, new_column = "policy_defense_spending",
+       section = "Policy", description = "Defense spending"),
+  list(column = "WSS16_3",  recode_rules = five_r, new_column = "policy_budget_balance",
+       section = "Policy", description = "Balanced budget"),
+  list(column = "WSS16_4",  recode_rules = five_r, new_column = "policy_mandatory_minimums",
+       section = "Policy", description = "Mandatory minimums"),
+  list(column = "WSS16_5",  recode_rules = five_r, new_column = "policy_immigration",
+       section = "Policy", description = "Immigration policy"),
+  list(column = "WSS16_6",  recode_rules = five_r, new_column = "policy_paid_leave",
+       section = "Policy", description = "Paid leave"),
+  list(column = "WSS16_7",  recode_rules = five_r, new_column = "policy_k12_education",
+       section = "Policy", description = "K-12 education"),
+  list(column = "WSS16_8",  recode_rules = five_r, new_column = "policy_higher_education",
+       section = "Policy", description = "Higher education"),
+  list(column = "WSS16_9",  recode_rules = five_r, new_column = "policy_health",
+       section = "Policy", description = "Health policy"),
+  list(column = "WSS16_10", recode_rules = five_r, new_column = "policy_marijuana",
+       section = "Policy", description = "Marijuana legalization"),
+  list(column = "WSS16_11", recode_rules = five_r, new_column = "policy_social_media",
+       section = "Policy", description = "Social media regulation"),
+  list(column = "WSS16_12", recode_rules = five_r, new_column = "policy_campaign_finance",
+       section = "Policy", description = "Campaign finance disclosure"),
+
+  # ── Rural-Urban Resentment ──
+  list(column = "WSS31_1", recode_rules = five_r, new_column = "rural_urban_resentment_taxes",
+       section = "Rural-Urban", description = "Tax fairness"),
+  list(column = "WSS31_2", recode_rules = five_r, new_column = "rural_urban_resentment_no_favors",
+       section = "Rural-Urban", description = "No special favors"),
+  list(column = "WSS31_3", recode_rules = five_r, new_column = "rural_urban_resentment_move_away",
+       section = "Rural-Urban", description = "Should move away"),
+  list(column = "WSS31_4", recode_rules = five_r, new_column = "rural_urban_resentment_too_much_say",
+       section = "Rural-Urban", description = "Too much political say"),
+
+  # ── Environment ──
+  list(column = "WSS17",   recode_rules = five_n, new_column = "environmental_concern",
+       section = "Environment", description = "General concern"),
+  list(column = "WSS19_1", recode_rules = four_r, new_column = "envthreat_habitat_loss",
+       section = "Environment", description = "Habitat loss"),
+  list(column = "WSS19_2", recode_rules = four_r, new_column = "envthreat_water_scarcity",
+       section = "Environment", description = "Water scarcity"),
+  list(column = "WSS19_3", recode_rules = four_r, new_column = "envthreat_wildfires",
+       section = "Environment", description = "Wildfires"),
+  list(column = "WSS19_4", recode_rules = four_r, new_column = "envthreat_air_pollution",
+       section = "Environment", description = "Air pollution"),
+  list(column = "WSS19_5", recode_rules = four_r, new_column = "envthreat_rising_temps",
+       section = "Environment", description = "Rising temperatures"),
+  list(column = "WSS20_1", recode_rules = five_r, new_column = "envpolicy_water_infrastructure",
+       section = "Environment", description = "Water infrastructure support"),
+  list(column = "WSS20_2", recode_rules = five_r, new_column = "envpolicy_water_conservation",
+       section = "Environment", description = "Water conservation support"),
+  list(column = "WSS22", recode_rules = c("1"="energy_mining","2"="renewable_energy","3"="recreation","4"="preservation"), new_column = "public_lands_priority",
+       section = "Environment", description = "Public lands priority"),
+
+  # ── Immigration ──
+  list(column = "WSS23_1", recode_rules = five_r, new_column = "immigration_legalization",
+       section = "Immigration", description = "Grant legal status"),
+  list(column = "WSS23_2", recode_rules = five_r, new_column = "immigration_end_separation",
+       section = "Immigration", description = "End family separation"),
+  list(column = "WSS23_3", recode_rules = five_r, new_column = "immigration_reduce_asylum",
+       section = "Immigration", description = "Reduce asylum seekers"),
+  list(column = "WSS23_4", recode_rules = five_r, new_column = "immigration_end_birthright",
+       section = "Immigration", description = "End birthright citizenship"),
+  list(column = "WSS23_5", recode_rules = five_r, new_column = "immigration_border_tech",
+       section = "Immigration", description = "Border technology (subsample)"),
+  list(column = "WSS23_6", recode_rules = five_r, new_column = "immigration_border_wall",
+       section = "Immigration", description = "Border wall (subsample)"),
+  list(column = "WSS23_7", recode_rules = five_r, new_column = "immigration_legal_resources",
+       section = "Immigration", description = "Legal resources (subsample)"),
+  list(column = "WSS61_1", recode_rules = c("1"=1,"2"=0), new_column = "know_undocumented",
+       section = "Immigration", description = "Knows undocumented person"),
+  list(column = "WSS61_2", recode_rules = c("1"=1,"2"=0), new_column = "know_daca",
+       section = "Immigration", description = "Knows DACA recipient"),
+  list(column = "WSS62",   recode_rules = five_r, new_column = "immigration_deportation_worry",
+       section = "Immigration", description = "Deportation worry"),
+
+  # ── Law Enforcement / Firearms ──
+  list(column = "WSS25",   recode_rules = five_n, new_column = "law_enforcement_rating",
+       section = "Law/Firearms", description = "Police performance rating"),
+  list(column = "WSS26",   recode_rules = c("1"=1,"2"=0), new_column = "firearm_in_home",
+       section = "Law/Firearms", description = "Firearm in home"),
+  list(column = "WSS27_1", recode_rules = five_r, new_column = "firearms_concealed_carry",
+       section = "Law/Firearms", description = "Concealed carry support"),
+  list(column = "WSS27_2", recode_rules = five_r, new_column = "firearms_background_checks",
+       section = "Law/Firearms", description = "Background checks support"),
+  list(column = "WSS27_3", recode_rules = five_r, new_column = "firearms_national_registry",
+       section = "Law/Firearms", description = "National registry support"),
+
+  # ── COVID ──
+  list(column = "WSS47_1", recode_rules = five_r,    new_column = "covid_mask_mandate",
+       section = "COVID", description = "Mask mandate support"),
+  list(column = "WSS48_1", recode_rules = binary_10, new_column = "covid_social_distance",
+       section = "COVID", description = "Stayed 6 feet away"),
+  list(column = "WSS48_2", recode_rules = binary_10, new_column = "covid_quarantine",
+       section = "COVID", description = "Quarantined at home"),
+  list(column = "WSS48_3", recode_rules = binary_10, new_column = "covid_check_neighbors",
+       section = "COVID", description = "Checked on neighbors"),
+  list(column = "WSS48_4", recode_rules = binary_10, new_column = "covid_wore_mask",
+       section = "COVID", description = "Wore mask in public"),
+  list(column = "WSS48_5", recode_rules = binary_10, new_column = "covid_protest_racial",
+       section = "COVID", description = "Protested racial inequality"),
+  list(column = "WSS48_6", recode_rules = binary_10, new_column = "covid_protest_guidelines",
+       section = "COVID", description = "Protested pandemic guidelines"),
+
+  # ── Political Participation ──
+  list(column = "WSS32_1", recode_rules = binary_10, new_column = "participation_rally",
+       section = "Participation", description = "Attended rally"),
+  list(column = "WSS32_2", recode_rules = binary_10, new_column = "participation_sign",
+       section = "Participation", description = "Displayed sign"),
+  list(column = "WSS32_3", recode_rules = binary_10, new_column = "participation_volunteer",
+       section = "Participation", description = "Volunteered"),
+  list(column = "WSS32_4", recode_rules = binary_10, new_column = "participation_protest",
+       section = "Participation", description = "Protested"),
+  list(column = "WSS32_5", recode_rules = binary_10, new_column = "participation_contact_official",
+       section = "Participation", description = "Contacted official"),
+  list(column = "WSS32_6", recode_rules = binary_10, new_column = "participation_donate",
+       section = "Participation", description = "Donated"),
+  list(column = "WSS32_7", recode_rules = binary_10, new_column = "participation_social_media",
+       section = "Participation", description = "Posted on social media"),
+  list(column = "WSS32_8", recode_rules = binary_10, new_column = "participation_persuade",
+       section = "Participation", description = "Persuaded others"),
+  list(column = "WSS32_9", recode_rules = binary_10, new_column = "participation_none",
+       section = "Participation", description = "Did none of these"),
+  list(column = "WSS34_a", recode_rules = binary_10, new_column = "consumerism_buycott",
+       section = "Participation", description = "Political buycott"),
+  list(column = "WSS34_b", recode_rules = binary_10, new_column = "consumerism_political_purchase",
+       section = "Participation", description = "Political purchase"),
+
+  # ── Efficacy / Elections ──
+  list(column = "WSS33_1", recode_rules = five_n, new_column = "internal_efficacy",
+       section = "Efficacy/Elections", description = "Internal efficacy"),
+  list(column = "WSS33_2", recode_rules = five_n, new_column = "external_efficacy",
+       section = "Efficacy/Elections", description = "External efficacy"),
+  list(column = "WSS35_b", recode_rules = four_r, new_column = "census_confidence",
+       section = "Efficacy/Elections", description = "Census accuracy confidence"),
+  list(column = "WSS41_6", recode_rules = five_r, new_column = "election_concern_delayed_results",
+       section = "Efficacy/Elections", description = "Concern: delayed results"),
+  list(column = "WSS41_7", recode_rules = five_r, new_column = "election_concern_ineligible_voting",
+       section = "Efficacy/Elections", description = "Concern: ineligible voting"),
+
+  # ── News Media ──
+  list(column = "WSS58_1",  recode_rules = binary_10, new_column = "news_cnn",
+       section = "News Media", description = "CNN"),
+  list(column = "WSS58_2",  recode_rules = binary_10, new_column = "news_network_tv",
+       section = "News Media", description = "Network TV"),
+  list(column = "WSS58_3",  recode_rules = binary_10, new_column = "news_national_paper",
+       section = "News Media", description = "National newspaper"),
+  list(column = "WSS58_4",  recode_rules = binary_10, new_column = "news_fox",
+       section = "News Media", description = "Fox News"),
+  list(column = "WSS58_5",  recode_rules = binary_10, new_column = "news_msnbc",
+       section = "News Media", description = "MSNBC"),
+  list(column = "WSS58_6",  recode_rules = binary_10, new_column = "news_local_broadcast",
+       section = "News Media", description = "Local broadcast"),
+  list(column = "WSS58_7",  recode_rules = binary_10, new_column = "news_local_paper",
+       section = "News Media", description = "Local newspaper"),
+  list(column = "WSS58_8",  recode_rules = binary_10, new_column = "news_social_media",
+       section = "News Media", description = "Social media"),
+  list(column = "WSS58_9",  recode_rules = binary_10, new_column = "news_npr_pbs",
+       section = "News Media", description = "NPR/PBS"),
+  list(column = "WSS58_10", recode_rules = binary_10, new_column = "news_telemundo",
+       section = "News Media", description = "Telemundo"),
+  list(column = "WSS58_95", recode_rules = binary_10, new_column = "news_other",
+       section = "News Media", description = "Other"),
+
+  # ── Income Gap / Redistribution ──
+  list(column = "WSS59a", recode_rules = c("1"="background_determines","2"="fair_chance","3"="neither"), new_column = "income_gap_belief",
+       section = "Redistribution", description = "Background determines vs fair chance"),
+  list(column = "WSS60a_1", recode_rules = three_n, new_column = "redist_less_well_off",
+       section = "Redistribution", description = "Support for less well off"),
+  list(column = "WSS60a_2", recode_rules = three_n, new_column = "redist_just_managing",
+       section = "Redistribution", description = "Support for just managing"),
+  list(column = "WSS60a_3", recode_rules = three_n, new_column = "redist_comfortable",
+       section = "Redistribution", description = "Support for comfortable"),
+  list(column = "WSS60a_4", recode_rules = three_n, new_column = "redist_most_well_off",
+       section = "Redistribution", description = "Support for most well off"),
+
+  # ── Police/Crime Contact ──
+  list(column = "WSS63m_1_1", recode_rules = binary_10, new_column = "police_stopped_self",
+       section = "Police Contact", description = "Stopped by police: self"),
+  list(column = "WSS63m_1_2", recode_rules = binary_10, new_column = "police_stopped_other",
+       section = "Police Contact", description = "Stopped by police: family/friend"),
+  list(column = "WSS63m_1_3", recode_rules = binary_10, new_column = "police_stopped_none",
+       section = "Police Contact", description = "Stopped by police: no one"),
+  list(column = "WSS63m_2_1", recode_rules = binary_10, new_column = "arrested_self",
+       section = "Police Contact", description = "Arrested: self"),
+  list(column = "WSS63m_2_2", recode_rules = binary_10, new_column = "arrested_other",
+       section = "Police Contact", description = "Arrested: family/friend"),
+  list(column = "WSS63m_2_3", recode_rules = binary_10, new_column = "arrested_none",
+       section = "Police Contact", description = "Arrested: no one"),
+  list(column = "WSS63m_3_1", recode_rules = binary_10, new_column = "crime_victim_self",
+       section = "Police Contact", description = "Crime victim: self"),
+  list(column = "WSS63m_3_2", recode_rules = binary_10, new_column = "crime_victim_other",
+       section = "Police Contact", description = "Crime victim: family/friend"),
+  list(column = "WSS63m_3_3", recode_rules = binary_10, new_column = "crime_victim_none",
+       section = "Police Contact", description = "Crime victim: no one"),
+  list(column = "WSS63m_4_1", recode_rules = binary_10, new_column = "called_police_self",
+       section = "Police Contact", description = "Called police: self"),
+  list(column = "WSS63m_4_2", recode_rules = binary_10, new_column = "called_police_other",
+       section = "Police Contact", description = "Called police: family/friend"),
+  list(column = "WSS63m_4_3", recode_rules = binary_10, new_column = "called_police_none",
+       section = "Police Contact", description = "Called police: no one"),
+
+  # ── Vote Choice / Contestation ──
+  list(column = "WSS36_b", recode_rules = binary_10, new_column = "v1",
+       section = "Contestation", description = "Pre-election Trump vote"),
+  list(column = "WSS36_c", recode_rules = binary_10, new_column = "v2",
+       section = "Contestation", description = "Post-election Trump vote"),
+  list(column = "WSS36_a", recode_rules = c("1"=1,"2"=0,"4"=0), new_column = "voted_2020",
+       section = "Contestation", description = "Voted in 2020"),
+  list(column = "WSS40_1", recode_rules = five_r, new_column = "tmp_contestation_attend_march",
+       section = "Contestation", description = "Attend march/demonstration"),
+  list(column = "WSS40_2", recode_rules = five_r, new_column = "tmp_contestation_criticize_election",
+       section = "Contestation", description = "Criticize election"),
+  list(column = "WSS40_3", recode_rules = five_r, new_column = "tmp_contestation_burn_flag",
+       section = "Contestation", description = "Burn American flag"),
+  list(column = "WSS40_4", recode_rules = five_r, new_column = "tmp_contestation_recount",
+       section = "Contestation", description = "Support ballot recount"),
+  list(column = "WSS40_5", recode_rules = five_r, new_column = "tmp_contestation_court",
+       section = "Contestation", description = "Contest in courts"),
+
+  # ── Arizona ──
+  list(column = "AZ301", recode_rules = c("1"=0,"2"=1,"3"=2,"4"=3,"5"=4,"6"=5,"7"=6,"8"=7,"9"=8,"10"=9,"11"=10), new_column = "az_therm_dem",
+       section = "Arizona", description = "AZ Dem feeling thermometer (0-10)"),
+  list(column = "AZ302", recode_rules = c("1"=0,"2"=1,"3"=2,"4"=3,"5"=4,"6"=5,"7"=6,"8"=7,"9"=8,"10"=9,"11"=10), new_column = "az_therm_rep",
+       section = "Arizona", description = "AZ Rep feeling thermometer (0-10)"),
+  list(column = "AZ303", recode_rules = c("1"=0,"2"=1,"3"=2,"4"=3,"5"=4,"6"=5,"7"=6,"8"=7,"9"=8,"10"=9,"11"=10), new_column = "az_therm_ind",
+       section = "Arizona", description = "AZ Ind feeling thermometer (0-10)"),
+  list(column = "AZ304", recode_rules = c("1"=0,"2"=1,"3"=2,"4"=3,"5"=4,"6"=5,"7"=6,"8"=7,"9"=8,"10"=9,"11"=10), new_column = "az_hisp_therm_dem",
+       section = "Arizona", description = "Hispanic Dem feeling therm (0-10)"),
+  list(column = "AZ305", recode_rules = c("1"=0,"2"=1,"3"=2,"4"=3,"5"=4,"6"=5,"7"=6,"8"=7,"9"=8,"10"=9,"11"=10), new_column = "az_hisp_therm_rep",
+       section = "Arizona", description = "Hispanic Rep feeling therm (0-10)"),
+  list(column = "AZ306", recode_rules = c("1"=0,"2"=1,"3"=2,"4"=3,"5"=4,"6"=5,"7"=6,"8"=7,"9"=8,"10"=9,"11"=10), new_column = "az_hisp_therm_ind",
+       section = "Arizona", description = "Hispanic Ind feeling therm (0-10)"),
+  list(column = "AZ307", recode_rules = five_r, new_column = "identity_racial_importance",
+       section = "Arizona", description = "Racial identity importance"),
+  list(column = "AZ308", recode_rules = five_r, new_column = "identity_state_importance",
+       section = "Arizona", description = "State identity importance"),
+  list(column = "AZ309", recode_rules = five_r, new_column = "identity_partisan_importance",
+       section = "Arizona", description = "Partisan identity importance"),
+  list(column = "AZ311_pipe_name", recode_rules = c("1"="McSally","2"="Kelly"), new_column = "az_senate_candidate",
+       section = "Arizona", description = "McSally vs Kelly"),
+  list(column = "AZ311", recode_rules = c("1"="strong_pro_candidate","2"="weak_pro_candidate","3"="weak_anti_opponent","4"="strong_anti_opponent"), new_column = "az_senate_justification",
+       section = "Arizona", description = "Senate vote justification"),
+
+  # ── Colorado ──
+  list(column = "CO01", recode_rules = four_r, new_column = "co_mail_voting_approval",
+       section = "Colorado", description = "Mail voting approval"),
+  list(column = "CO02", recode_rules = c("1"="mail","2"="drop_off","3"="in_person"), new_column = "co_ballot_method",
+       section = "Colorado", description = "Mail/drop-off/in-person"),
+  list(column = "CO03", recode_rules = c("1"="early","2"="last_week","3"="last_weekend","4"="last_two_days"), new_column = "co_voting_schedule",
+       section = "Colorado", description = "Voting schedule"),
+  list(column = "CO04", recode_rules = c("1"="Hickenlooper","2"="Gardner","3"="other","4"="wont_vote"), new_column = "co_senate_vote",
+       section = "Colorado", description = "CO Senate vote"),
+  list(column = "CO05", recode_rules = four_r, new_column = "co_presidential_debates",
+       section = "Colorado", description = "Presidential debate importance"),
+  list(column = "CO06", recode_rules = four_r, new_column = "co_senate_debates",
+       section = "Colorado", description = "Senate debate importance"),
+  list(column = "CO07", recode_rules = four_r, new_column = "co_senate_control",
+       section = "Colorado", description = "Senate control importance"),
+  list(column = "CO08", recode_rules = four_r, new_column = "co_trump_approval",
+       section = "Colorado", description = "Trump approval importance"),
+
+  # ── New Mexico ──
+  list(column = "NM01", recode_rules = c("1"="Lujan","2"="Ronchetti","3"="other","4"="wont_vote"), new_column = "nm_senate_vote",
+       section = "New Mexico", description = "NM Senate vote"),
+
+  # ── Nevada ──
+  list(column = "NV01", recode_rules = c("1"="large_gap","2"="small_gap"), new_column = "nv_income_gap",
+       section = "Nevada", description = "Large gap vs small gap"),
+  list(column = "NV02a_1", recode_rules = c("1"="advantage","2"="disadvantage","3"="neither"), new_column = "nv_mobility_education",
+       section = "Nevada", description = "Background: education"),
+  list(column = "NV02a_2", recode_rules = c("1"="advantage","2"="disadvantage","3"="neither"), new_column = "nv_mobility_career",
+       section = "Nevada", description = "Background: career"),
+  list(column = "NV02a_3", recode_rules = c("1"="advantage","2"="disadvantage","3"="neither"), new_column = "nv_mobility_work",
+       section = "Nevada", description = "Background: work progression"),
+  list(column = "NV03a_1", recode_rules = three_n, new_column = "nv_intergen_education",
+       section = "Nevada", description = "Education vs parents"),
+  list(column = "NV03a_2", recode_rules = three_n, new_column = "nv_intergen_living_standard",
+       section = "Nevada", description = "Living standard vs parents"),
+  list(column = "NV03a_3", recode_rules = three_n, new_column = "nv_intergen_housing",
+       section = "Nevada", description = "Housing vs parents"),
+  list(column = "NV03a_4", recode_rules = three_n, new_column = "nv_intergen_social_position",
+       section = "Nevada", description = "Social position vs parents"),
+  list(column = "NV04_1", recode_rules = c("1"="poor_less","2"="equal","3"="rich_less"), new_column = "nv_gap_college",
+       section = "Nevada", description = "Opportunity gap: college"),
+  list(column = "NV04_2", recode_rules = c("1"="poor_less","2"="equal","3"="rich_less"), new_column = "nv_gap_home",
+       section = "Nevada", description = "Opportunity gap: homeownership"),
+  list(column = "NV04_3", recode_rules = c("1"="poor_less","2"="equal","3"="rich_less"), new_column = "nv_gap_job",
+       section = "Nevada", description = "Opportunity gap: stable job"),
+  list(column = "NV04_4", recode_rules = c("1"="poor_less","2"="equal","3"="rich_less"), new_column = "nv_gap_childcare",
+       section = "Nevada", description = "Opportunity gap: childcare"),
+  list(column = "NV04_5", recode_rules = c("1"="poor_less","2"="equal","3"="rich_less"), new_column = "nv_gap_healthcare",
+       section = "Nevada", description = "Opportunity gap: healthcare"),
+  list(column = "NV05m_1", recode_rules = binary_10, new_column = "nv_ensure_federal",
+       section = "Nevada", description = "Federal govt should ensure opportunity"),
+  list(column = "NV05m_2", recode_rules = binary_10, new_column = "nv_ensure_state",
+       section = "Nevada", description = "State govt"),
+  list(column = "NV05m_3", recode_rules = binary_10, new_column = "nv_ensure_local",
+       section = "Nevada", description = "Local govt"),
+  list(column = "NV05m_4", recode_rules = binary_10, new_column = "nv_ensure_schools",
+       section = "Nevada", description = "Schools"),
+  list(column = "NV05m_5", recode_rules = binary_10, new_column = "nv_ensure_employers",
+       section = "Nevada", description = "Employers"),
+  list(column = "NV05m_6", recode_rules = binary_10, new_column = "nv_ensure_colleges",
+       section = "Nevada", description = "Colleges/universities"),
+  list(column = "NV05m_7", recode_rules = binary_10, new_column = "nv_ensure_charities",
+       section = "Nevada", description = "Charities/community groups"),
+  list(column = "NV05m_8", recode_rules = binary_10, new_column = "nv_ensure_religious",
+       section = "Nevada", description = "Religious organizations"),
+  list(column = "NV05m_9", recode_rules = binary_10, new_column = "nv_ensure_none",
+       section = "Nevada", description = "None of these"),
+  list(column = "NV06",    recode_rules = three_n, new_column = "nv_family_finances",
+       section = "Nevada", description = "Family financial situation"),
+  list(column = "NV07_a_1", recode_rules = three_n, new_column = "nv_children_education",
+       section = "Nevada", description = "Children better/worse: education"),
+  list(column = "NV07_a_2", recode_rules = three_n, new_column = "nv_children_finances",
+       section = "Nevada", description = "Children better/worse: finances"),
+  list(column = "NV07_a_3", recode_rules = three_n, new_column = "nv_children_living_standard",
+       section = "Nevada", description = "Children better/worse: living standard")
+)
+```
+
+## Render Codebook
+
+The `codebook()` function auto-detects metrics from the recode rules. Pass
+`render = TRUE` to get a formatted `gt` table. Pass `data = wss20` to
+include summary statistics (N, missing, mean, SD).
+
+```{r codebook-basic}
+# Data frame output
+cb <- codebook(wss20_rules)
+cb
+```
+
+```{r codebook-rendered, results = "asis"}
+# Rendered gt table
+codebook(wss20_rules, render = TRUE, title = "WSS 2020 Variable Codebook")
+```
+
+```{r codebook-with-stats, results = "asis"}
+# With summary statistics (requires the recoded data)
+# codebook(wss20_rules, data = wss20, render = TRUE,
+#          title = "WSS 2020 Codebook with Summary Statistics")
+```
+
+## Summary Counts
+
+```{r summary-counts}
+cb <- codebook(wss20_rules)
+cat("Total variables:", nrow(cb), "\n\n")
+cb %>%
+  dplyr::count(section, name = "n_variables") %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Variables by Section") %>%
+  gt::grand_summary_rows(
+    columns = n_variables,
+    fns = list(Total = ~ sum(.))
+  )
+```
+
+### Metric Distribution
+
+```{r metric-dist}
+cb %>%
+  dplyr::count(metric, sort = TRUE) %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Variables by Response Metric")
+```

@@ -15,12 +15,12 @@ run_shiny_app <- function(...) {
   if (!requireNamespace("shiny", quietly = TRUE)) {
     stop("Package 'shiny' is required. Please install it with: install.packages('shiny')")
   }
-  
-  app_dir <- system.file("shiny-examples", "ordinal_models", package = "weberUtilties")
-  
+
+  app_dir <- system.file("shiny-examples", "ordinal_models", package = "vrm")
+
   if (app_dir == "") {
     stop("Could not find Shiny app directory. Try re-installing the package.")
   }
-  
+
   shiny::runApp(app_dir, ...)
 }

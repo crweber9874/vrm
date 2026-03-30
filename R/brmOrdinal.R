@@ -1,27 +1,37 @@
-#' @title brms.ordinal
-#' @description Estimate an ordinal regression model in `brms`
+#' Fit a Bayesian Ordinal Regression Model
 #'
-#' @param Specify DV, IV, data, and other arguments native to BRMS.
-#' For example, with +1 IV and/or two way interactions;
-#'  IV <- "presvote_trump_2020 + prepost + presvote_trump_2020:prepost"
+#' A convenience wrapper around \code{\link{brms_fit}} for ordinal
+#' (cumulative logit) regression.
 #'
-#' @return brms model object
+#' @inheritParams brms_fit
+#' @param ... Additional arguments passed to \code{\link[brms]{brm}}.
+#'
+#' @return A \code{brmsfit} object.
 #' @export
-#
-brms.ordinal <- function(data = dataActive, IV = IV, DV = DV,
+#'
+#' @examples
+#' \dontrun{
+#' fit <- brms.ordinal(
+#'   data      = df,
+#'   DV        = "rating",
+#'   treatment = "treatment",
+#'   moderator = "group",
+#'   controls  = "age + gender"
+#' )
+#' }
+brms.ordinal <- function(data,
+                         DV,
+                         treatment = NULL,
+                         moderator = NULL,
+                         controls  = NULL,
+                         IV        = NULL,
+                         weights   = NULL,
                          chains = 4, iter = 2000, warmup = 1000,
-                         cores = 10, seed = 1234, ...){
-
-  # Create a model formula
-  modelFormula <- stats::as.formula(paste(DV, "~", IV))
-  # Fit the model
-  model <- brms::brm(
-    formula = modelFormula,
-    data = data,
-    family = cumulative(),
-    ...
-  )
-  return(model)
+                         cores = 4, seed = 1234, ...) {
+  brms_fit(data = data, DV = DV,
+           treatment = treatment, moderator = moderator,
+           controls = controls, IV = IV,
+           family = cumulative(), weights = weights,
+           chains = chains, iter = iter, warmup = warmup,
+           cores = cores, seed = seed, ...)
 }
-
-

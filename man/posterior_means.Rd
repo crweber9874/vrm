@@ -2,10 +2,10 @@
 % Please edit documentation in R/posteriorMeans.R
 \name{posterior_means}
 \alias{posterior_means}
-\title{Generate Posterior Predictions with 2 way interactions}
+\title{Generate Posterior Predicted Means with Two-Way Interactions}
 \usage{
 posterior_means(
-  model = burn_flag,
+  model,
   xvar = "presvote_trump_2020",
   mvar = "prepost",
   xval = seq(0, 1),
@@ -13,20 +13,32 @@ posterior_means(
 )
 }
 \arguments{
-\item{model}{{brms model}}
+\item{model}{A \code{brmsfit} object.}
 
-\item{xvar}{{independent variable}}
+\item{xvar}{Character. Name of the primary independent variable.}
 
-\item{mvar}{{moderator variable}}
+\item{mvar}{Character. Name of the moderator variable.}
 
-\item{xrange}{{values of xvar}}
+\item{xval}{Numeric vector. Values of \code{xvar} to predict at.
+Default: \code{seq(0, 1)}.}
 
-\item{mrange}{{values of mvar}}
+\item{mval}{Numeric vector. Values of \code{mvar} to predict at.
+Default: \code{c(0, 1)}.}
 }
 \value{
-R data frame with posterior predictions for each category, across levels of xvar, all other variables held at mean.
+A tibble with posterior predicted means and 95\\% credible intervals
+for each combination of \code{xvar} and \code{mvar}.
 }
 \description{
-Use category_groups to group categories together. The function asks the user to choose how to group
-the categories together, in order to aid interpretation with many category models (e.g. ordinal or multinomial models).
+Computes posterior predicted means from a \pkg{brms} model across a grid
+of two interacting variables, holding all other covariates at their means.
+Supports ordinal, multinomial, binary, and Gaussian families.
+}
+\examples{
+\dontrun{
+preds <- posterior_means(fit,
+  xvar = "age", mvar = "treatment",
+  xval = c(0, 0.5, 1), mval = c(0, 1)
+)
+}
 }

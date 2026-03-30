@@ -2,7 +2,7 @@
 % Please edit documentation in R/spreadDraws.R
 \name{spreadDraw}
 \alias{spreadDraw}
-\title{Merge Draws from BRMS object to Secondary Data}
+\title{Summarize Random Effects from a BRMS Model}
 \usage{
 spreadDraw(
   model1,
@@ -11,6 +11,29 @@ spreadDraw(
   upper_name = "upper.DIF"
 )
 }
+\arguments{
+\item{model1}{A \code{brmsfit} object with random effects by \code{caseid}.}
+
+\item{mean_name}{Character. Name for the posterior mean column.
+Default: \code{"mean_var"}.}
+
+\item{lower_name}{Character. Name for the lower CI column.
+Default: \code{"lower.DIF"}.}
+
+\item{upper_name}{Character. Name for the upper CI column.
+Default: \code{"upper.DIF"}.}
+}
+\value{
+A tibble with one row per \code{caseid} and columns for the
+posterior mean, lower, and upper credible intervals.
+}
 \description{
-Merge Draws from BRMS object to Secondary Data
+Extracts and summarizes random-effect draws (group-level parameters) from a
+\pkg{brms} model using \code{tidybayes::spread_draws}. Returns posterior
+means and 95\\% credible intervals per case.
+}
+\examples{
+\dontrun{
+draws <- spreadDraw(fit, mean_name = "mean_re", lower_name = "lo", upper_name = "hi")
+}
 }

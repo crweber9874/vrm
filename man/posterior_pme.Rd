@@ -2,33 +2,40 @@
 % Please edit documentation in R/posteriorMarginal.R
 \name{posterior_pme}
 \alias{posterior_pme}
-\title{#' @title posterior_pme
-Generate Predictive Marginal Effect}
+\title{Posterior Predictive Marginal Effect}
 \usage{
 posterior_pme(
   model = burn_flag,
   xvar = "prepost",
-  mvar = "presvote_trump_2020",
+  mvar = "vote_trump",
   mrange = c(0, 1),
-  xrange = c("pre", "post")
+  xrange = c(0, 1)
 )
 }
 \arguments{
-\item{model}{{brms model}}
+\item{model}{A \code{brmsfit} object.}
 
-\item{xvar}{{independent variable}}
+\item{xvar}{Character. Name of the focal (treatment) variable.}
 
-\item{mvar}{{moderator variable}}
+\item{mvar}{Character. Name of the moderator variable.}
 
-\item{mrange}{{values of mvar}}
+\item{mrange}{Numeric vector. Values of \code{mvar} to condition on.
+Default: \code{c(0, 1)}.}
 
-\item{xrange}{{values of xvar}}
+\item{xrange}{Numeric vector of length 2. Low and high values of
+\code{xvar} to contrast. Default: \code{c(0, 1)}.}
 }
 \value{
-R data frame with posterior predictions for each category, across levels of xvar, all other variables held at mean.
+A tibble with the mean marginal effect and 95\\% credible intervals,
+grouped by moderator (and \code{.category} for ordinal/multinomial models).
 }
 \description{
-Use category_groups to group categories together. The function asks the user to choose how to group
-the categories together, in order to aid interpretation with many category models (e.g. ordinal or multinomial models).
-The function returns the average marginal effect for each category, across levels of xvar, all other variables observed.
+Computes the average marginal effect of a focal variable from a \pkg{brms}
+model, optionally conditioned on levels of a moderator. Supports ordinal,
+multinomial, binary, and Gaussian families.
+}
+\examples{
+\dontrun{
+me <- posterior_pme(fit, xvar = "prepost", mvar = "vote_trump")
+}
 }

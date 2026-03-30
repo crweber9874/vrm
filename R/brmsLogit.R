@@ -1,24 +1,37 @@
-
-#' Stan binary Model
+#' Fit a Bayesian Binary Logistic Regression Model
 #'
-#' @param Specify DV, IV, data, and other arguments native to BRMS. DV must be binary, consisting of two levels.
+#' A convenience wrapper around \code{\link{brms_fit}} for binary
+#' (Bernoulli) logistic regression.
 #'
-#' @return brms model object, binary regression (Logit)
+#' @inheritParams brms_fit
+#' @param ... Additional arguments passed to \code{\link[brms]{brm}}.
+#'
+#' @return A \code{brmsfit} object.
 #' @export
 #'
-#'
-brms.binary <- function(data = dataActive, IV = IV, DV = DV ,  chains = 4, iter = 2000, warmup = 1000, cores = 10, seed = 1234,...){
-
-
-        modelFormula <- stats::as.formula(paste(DV, "~", IV))
-        # Fit the model
-        model <- brms::brm(
-          formula = modelFormula,
-          data = data,
-         family = bernoulli(),
-          ...
-        )
-  return(model)
+#' @examples
+#' \dontrun{
+#' fit <- brms.binary(
+#'   data      = df,
+#'   DV        = "outcome",
+#'   treatment = "prepost",
+#'   moderator = "vote_trump",
+#'   controls  = "female + college"
+#' )
+#' }
+brms.binary <- function(data,
+                        DV,
+                        treatment = NULL,
+                        moderator = NULL,
+                        controls  = NULL,
+                        IV        = NULL,
+                        weights   = NULL,
+                        chains = 4, iter = 2000, warmup = 1000,
+                        cores = 4, seed = 1234, ...) {
+  brms_fit(data = data, DV = DV,
+           treatment = treatment, moderator = moderator,
+           controls = controls, IV = IV,
+           family = bernoulli(), weights = weights,
+           chains = chains, iter = iter, warmup = warmup,
+           cores = cores, seed = seed, ...)
 }
-
-

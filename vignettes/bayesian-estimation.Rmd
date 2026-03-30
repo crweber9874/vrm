@@ -1,0 +1,541 @@
+---
+title: "Bayesian Estimation with brms"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bayesian Estimation with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  eval = FALSE
+)
+```
+
+## Overview
+
+This vignette demonstrates a complete Bayesian estimation workflow using `vrm` and `brms`, modeled after the post-estimation analysis in Weber (2025). The workflow covers model fitting across multiple families (linear, ordinal, multinomial), posterior prediction, marginal effects, counterfactual inference via g-computation, and publication-quality visualization. All examples use the 2020 Western States Survey (`wss20`), a natural experiment in which respondents were surveyed before and after the presidential election.
+
+## Data and Research Design
+
+The Western States Survey is a pre-post election design. The key treatment variable (`prepost`) indicates whether a respondent completed the survey before or after the 2020 election. The moderator (`vote_trump`) captures whether the respondent voted for Trump. The outcome is support for various electoral contestation behaviors (e.g., attending a march, burning a flag, requesting a recount), each measured on a 5-point Likert scale.
+
+```{r load-data}
+library(vrm)
+library(brms)
+library(tidybayes)
+library(dplyr)
+library(tidyr)
+
+data(wss20, package = "vrm")
+```
+
+## Step 1: IPTW Weights (Optional)
+
+Before fitting outcome models, we can estimate inverse probability of treatment weights (IPTW) to adjust for pre-treatment covariate imbalance. `ps_weight()` fits a propensity score model for the treatment assignment and returns stabilized weights. It supports logistic regression (`"glm"`), gradient boosted models (`"gbm"`), and random forest (`"rf"`).
+
+```{r iptw-weights}
+ps_result <- ps_weight(
+  data      = wss20,
+  treatment = "prepost",
+  formula   = ~ female + latino + college + scale(age),
+  methods   = "glm"
+)
+
+# ps_weight() returns a list: $data has new ps/wts columns, $fits has the model
+wss20 <- ps_result$data
+
+# Check weight distribution
+summary(wss20$wts)
+```
+
+When multiple methods are requested, columns are suffixed (e.g., `wts_glm`, `wts_gbm`, `wts_rf`):
+
+```{r iptw-multi}
+ps_multi <- ps_weight(
+  data      = wss20,
+  treatment = "prepost",
+  formula   = ~ female + latino + college + scale(age),
+  methods   = c("glm", "gbm")
+)
+wss20 <- ps_multi$data
+# Now has: ps_glm, wts_glm, ps_gbm, wts_gbm
+```
+
+## Step 2: Model Fitting
+
+`vrm` just consists of a lot of wrappers. There's not a lot original
+here, but just useful things that I
+keep cut-and-pasting across projects.
+
+So, the idea is to build a set of functions from different project
+analysis scripts I've run over time,
+and just put them into one place, this package.
+
+`brms::brm()` that accept formula components as character strings. This makes it easy to fit the same specification across different families.
+
+### Linear Model
+
+A Gaussian (linear) model...It doesn't make sense in all circumstances, but usually a fine place to start.
+
+```{r fit-linear}
+fit_linear <- brms.linear(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + scale(age)",
+  cores = 4, chains = 4, iter = 2000
+)
+```
+
+### Weighted Linear Model (IPTW)
+
+To incorporate IPTW weights, pass the weight column name via `weights`. The function builds `DV | weights(wts) ~ ...` internally:
+
+```{r fit-linear-iptw}
+fit_linear_w <- brms.linear(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + scale(age)",
+  cores = 4, chains = 4, iter = 2000
+)
+```
+
+### Ordinal Model
+
+A cumulative logit model assumes an ordinal response, and cumulative probabilities. The covariate(s) effects are proportional across response categories (i.e., parallel lines assumption).
+
+```{r fit-ordinal}
+fit_ord <- brms.ordinal(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + scale(age)",
+  cores = 4, chains = 4, iter = 2000
+)
+```
+
+### Multinomial Model
+
+A categorical (multinomial) model relaxes this...response categories are nominal, and covariate effects are estimated separately for each category (relative to a reference category). 
+
+```{r fit-nominal}
+fit_mlogit <- brms.nominal(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + scale(age)",
+  cores = 4, chains = 4, iter = 2000
+)
+```
+
+### General-Purpose Wrapper
+
+Alternatively, `brms_fit()` accepts any `brms` family:
+
+```{r brms-fit}
+fit_alt <- brms_fit(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + scale(age)",
+  family    = cumulative("logit")
+)
+```
+
+### Fitting a Model Battery
+
+Fitting the same model across model items -- one model at a time -- becomes tedious. Use `fit_brms_battery()` to fit a battery of models across multiple items and families.
+
+The `wss20` data-builder creates `tmp_contestation_*` columns in wide format before reshaping to long. To use the battery, work with the wide-format data (i.e., before `pivot_longer`):
+
+```{r battery}
+items <- c(
+  "tmp_contestation_attend_march",
+  "tmp_contestation_criticize_election",
+  "tmp_contestation_burn_flag",
+  "tmp_contestation_recount",
+  "tmp_contestation_court"
+)
+families <- list(ord = cumulative(), linear = gaussian())
+
+# Unweighted battery (use wide-format wss20 before pivot_longer)
+models <- fit_brms_battery(
+  data     = wss20_wide,
+  items    = items,
+  rhs      = "prepost * vote_trump + female + latino + college + scale(age)",
+  families = families,
+  data_dir = tempdir(),
+  prefix   = "wss20",
+  weight_var = NULL,
+  cores = 4, chains = 3, iter = 2000
+)
+```
+
+To run the battery with IPTW weights, supply `weight_var`. This fits both unweighted and weighted variants for each item x family combination, using `DV | weights(wts) ~ rhs` in `brms`:
+
+```{r battery-iptw}
+models_w <- fit_brms_battery(
+  data       = wss20_wide,
+  items      = items,
+  rhs        = "prepost * vote_trump + female + latino + college + scale(age)",
+  families   = families,
+  data_dir   = tempdir(),
+  prefix     = "wss20",
+  weight_var = "wts",
+  cores = 4, chains = 3, iter = 2000
+)
+
+# Model names include a _w suffix for weighted variants
+names(models_w)
+```
+
+Alternatively, with the long-format `wss20`, fit a single model on `contestation_value` and include `contestation` as a covariate:
+
+```{r battery-long}
+fit_long <- brms.linear(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + scale(age) + contestation",
+  cores = 4, chains = 4, iter = 2000
+)
+```
+
+## Step 3: Model Diagnostics
+
+Check convergence across the battery:
+
+```{r diagnostics}
+diag_tbl <- summarize_brm_diagnostics(models)
+print_diagnostic_warnings(diag_tbl, label = "WSS 2020")
+
+# Inspect the diagnostic table
+diag_tbl
+```
+
+This reports divergent transitions, max treedepth exceedances, Rhat, and effective sample size ratios for each model, flagging any with potential issues.
+
+## Step 4: Posterior Predicted Means
+
+`posterior_means()` computes posterior predicted means across a grid of treatment and moderator values, holding all other covariates at their observed means.
+
+```{r posterior-means}
+pred_means <- posterior_means(
+  model = fit_linear,
+  xvar  = "prepost",
+  mvar  = "vote_trump",
+  xval  = c(0, 1),
+  mval  = c(0, 1)
+)
+pred_means
+```
+
+For ordinal models, the output includes a `.category` column with predicted probabilities for each response level:
+
+```{r posterior-means-ord}
+pred_ord <- posterior_means(
+  model = fit_ord,
+  xvar  = "prepost",
+  mvar  = "vote_trump",
+  xval  = c(0, 1),
+  mval  = c(0, 1)
+)
+pred_ord
+```
+
+## Step 5: Posterior Marginal Effects
+
+`posterior_pme()` computes the average marginal effect of the treatment variable, conditioned on the moderator. This is the difference in predicted values between `xrange[2]` and `xrange[1]`, evaluated at each level of the moderator.
+
+```{r marginal-effects}
+me_linear <- posterior_pme(
+  model  = fit_linear,
+  xvar   = "prepost",
+  mvar   = "vote_trump",
+  xrange = c(0, 1),
+  mrange = c(0, 1)
+)
+me_linear
+```
+
+For ordinal models, marginal effects are computed per response category:
+
+```{r marginal-effects-ord}
+me_ord <- posterior_pme(
+  model  = fit_ord,
+  xvar   = "prepost",
+  mvar   = "vote_trump",
+  xrange = c(0, 1),
+  mrange = c(0, 1)
+)
+me_ord
+```
+
+## Step 6: Posterior Predictive Differences
+
+`posterior_pred_diff()` provides a cleaner interface for computing the posterior distribution of contrasts (e.g., post minus pre), with full control over covariate profiles:
+
+```{r pred-diff}
+diff_linear <- posterior_pred_diff(
+  model = fit_linear,
+  xvar  = "prepost",
+  mvar  = "vote_trump",
+  xval  = c(0, 1),
+  mval  = c(0, 1),
+  prob  = 0.95
+)
+diff_linear
+
+# For ordinal models, filter to a specific category
+diff_ord_support <- posterior_pred_diff(
+  model    = fit_ord,
+  xvar     = "prepost",
+  mvar     = "vote_trump",
+  xval     = c(0, 1),
+  mval     = c(0, 1),
+  category = "5"
+)
+diff_ord_support
+```
+
+## Step 7: Raw Posterior Draws
+
+For custom visualizations (ridgeplots, density plots), extract the full posterior distribution with `posterior_draws_grid()`:
+
+```{r draws}
+draws <- posterior_draws_grid(
+  model  = fit_linear,
+  xvar   = "prepost",
+  mvar   = "vote_trump",
+  xval   = c(0, 1),
+  mval   = c(0, 1),
+  ndraws = 500
+)
+head(draws)
+```
+
+You can also set specific covariate profiles:
+
+```{r draws-covariates}
+draws_profile <- posterior_draws_grid(
+  model      = fit_linear,
+  xvar       = "prepost",
+  mvar       = "vote_trump",
+  xval       = c(0, 1),
+  mval       = c(0, 1),
+  covariates = list(female = 1, college = 1),
+  ndraws     = 500
+)
+```
+
+## Step 8: Counterfactual Inference (G-Computation)
+
+G-computation estimates individual-level treatment effects by predicting outcomes under both observed and counterfactual treatment conditions. This three-step workflow is the core of the causal inference framework.
+
+### Step 8a: Generate Counterfactual Data
+
+`generate_counterfactual_data()` doubles the dataset, creating one copy with actual treatment values and one with flipped values:
+
+```{r counterfactual}
+cf_data <- generate_counterfactual_data(
+  data          = wss20,
+  treatment_var = "prepost"
+)
+# Each respondent now appears twice
+table(cf_data$pre_condition)
+```
+
+### Step 8b: Obtain Posterior Predictions
+
+Feed the counterfactual data through `tidybayes::add_epred_draws()` to get posterior predictions under both conditions:
+
+```{r cf-predictions}
+cf_preds <- cf_data %>%
+  tidybayes::add_epred_draws(fit_linear, ndraws = 500)
+```
+
+### Step 8c: Calculate Individual Treatment Effects
+
+`calculate_individual_effects()` pivots from long to wide on condition, computes the per-individual difference, and applies direction correction:
+
+```{r individual-effects}
+ind_effects <- calculate_individual_effects(
+  predictions_long = cf_preds,
+  pred_col         = ".epred",
+  treatment_var    = "prepost",
+  group_vars       = c("vote_trump")
+)
+head(ind_effects)
+```
+
+### Step 8d: Summarize Treatment Effects
+
+Aggregate to conditional average treatment effects (CATEs):
+
+```{r summarize-effects}
+cate <- summarize_treatment_effects(
+  effects_data = ind_effects,
+  effect_var   = "treatment_effect",
+  group_vars   = c("vote_trump"),
+  conf_level   = 0.95,
+  draw_level   = TRUE
+)
+cate
+```
+
+For ordinal models, include `.category` in the grouping:
+
+```{r summarize-effects-ord}
+cf_preds_ord <- cf_data %>%
+  tidybayes::add_epred_draws(fit_ord, ndraws = 500)
+
+ind_effects_ord <- calculate_individual_effects(
+  predictions_long = cf_preds_ord,
+  pred_col         = ".epred",
+  treatment_var    = "prepost",
+  group_vars       = c("vote_trump", ".category")
+)
+
+cate_ord <- summarize_treatment_effects(
+  effects_data = ind_effects_ord,
+  effect_var   = "treatment_effect",
+  group_vars   = c("vote_trump", ".category"),
+  draw_level   = TRUE
+)
+cate_ord
+```
+
+## Step 9: Marginal Effects Battery
+
+When you have fitted a battery of models, `marginal_effects_battery()` computes marginal effects across all items and families at once:
+
+```{r me-battery}
+me_all <- marginal_effects_battery(
+  model_list = models,
+  items      = items,
+  treatment  = "prepost",
+  moderator  = "vote_trump"
+)
+me_all
+```
+
+## Step 10: Publication Tables
+
+`brms_regression_table()` produces a formatted `gt` table from a model list:
+
+```{r reg-table}
+level_lookup <- list(
+  attend_march       = c("Strongly Oppose", "Oppose", "Neutral", "Support", "Strongly Support"),
+  burn_flag          = c("Strongly Oppose", "Oppose", "Neutral", "Support", "Strongly Support"),
+  recount            = c("Strongly Oppose", "Oppose", "Neutral", "Support", "Strongly Support"),
+  court              = c("Strongly Oppose", "Oppose", "Neutral", "Support", "Strongly Support"),
+  criticize_election = c("Strongly Oppose", "Oppose", "Neutral", "Support", "Strongly Support")
+)
+
+brms_regression_table(
+  model_list    = models,
+  dataset_label = "2020 Western States Survey",
+  level_lookup  = level_lookup
+)
+```
+
+## Step 11: Visualization
+
+### Ridgeplots
+
+Combine draws across items and visualize with `gg_posterior_ridges()`:
+
+```{r ridgeplot}
+library(purrr)
+library(ggridges)
+
+all_draws <- map_dfr(items, function(it) {
+  posterior_draws_grid(
+    model  = models[[paste0(it, "_linear")]],
+    xvar   = "prepost",
+    mvar   = "vote_trump",
+    xval   = c(0, 1),
+    mval   = c(0, 1),
+    ndraws = 500
+  ) %>%
+    mutate(item = it)
+})
+
+gg_posterior_ridges(
+  draws        = all_draws,
+  ridge_var    = "item",
+  fill_var     = "prepost",
+  facet_var    = "vote_trump",
+  fill_labels  = c("0" = "Pre-Election", "1" = "Post-Election"),
+  facet_labels = c("0" = "Biden Voter", "1" = "Trump Voter"),
+  title        = "Posterior Predicted Mean Support (Linear)"
+)
+```
+
+### Forest Plot of Predictive Differences
+
+```{r forest-plot}
+all_diffs <- map_dfr(items, function(it) {
+  posterior_pred_diff(
+    model = models[[paste0(it, "_linear")]],
+    xvar  = "prepost",
+    mvar  = "vote_trump"
+  ) %>%
+    mutate(item = it)
+})
+
+gg_pred_diff(
+  data         = all_diffs,
+  x_var        = "item",
+  color_var    = "vote_trump",
+  color_labels = c("0" = "Biden Voter", "1" = "Trump Voter"),
+  title        = "Posterior Predictive Difference (Post − Pre)"
+)
+```
+
+### Marginal Effects (Ordinal Categories)
+
+```{r marginal-plot}
+ggMargins_categories(
+  data               = me_ord,
+  mvar               = "vote_trump",
+  title              = "Marginal Effect of Post-Election Period",
+  point_color_values = c("#E63946", "#457B9D")
+)
+```
+
+### Battery Forest Plot
+
+```{r battery-forest}
+plot_marginal_effects(
+  me_data = me_all,
+  title   = "Marginal Effect of Post-Election Period",
+  colors  = c("Trump" = "#E63946", "Non-Trump" = "#457B9D")
+)
+```
+
+## Summary
+
+The `vrm` Bayesian workflow:
+
+1. **Weight** (optional) with `ps_weight()` for IPTW-adjusted estimation
+2. **Fit** models with `brms.linear()`, `brms.ordinal()`, `brms.nominal()`, or `fit_brms_battery()`
+3. **Diagnose** with `summarize_brm_diagnostics()`
+4. **Predict** with `posterior_means()`, `posterior_pme()`, `posterior_pred_diff()`
+5. **Extract draws** with `posterior_draws_grid()` for custom visualizations
+6. **Counterfactual** inference with `generate_counterfactual_data()` + `calculate_individual_effects()` + `summarize_treatment_effects()`
+7. **Tabulate** with `brms_regression_table()`
+8. **Visualize** with `gg_posterior_ridges()`, `gg_pred_diff()`, `ggMargins_categories()`, `plot_marginal_effects()`

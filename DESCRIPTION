@@ -43,6 +43,8 @@ Suggests:
     DT,
     GGally,
     corrplot,
+    plyr,
+    stringr,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)

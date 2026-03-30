@@ -8,121 +8,296 @@ vignette: >
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4
+)
 ```
 
 ## Overview
 
-`vrm` provides a unified interface for regression modeling, posterior prediction,
-counterfactual inference, and publication-quality visualization. This vignette
-walks through the core workflow using electoral contestation survey data.
+`vrm`, **Visualization and Regression Modeling**, is an R package designed to streamline the workflow of regression modeling, prediction, and visualization for social science research. It provides a unified interface for regression modeling, posterior prediction, counterfactual inference, and publication-quality visualization. This vignette demonstrates the workflow using the package's built-in survey data.
 
-## Data Preparation
+## 1. Data Utilities
 
-```{r}
+### Rescaling
+
+Use `zero_one()` or `zero.one()` to rescale a numeric variable to the [0, 1] range:
+
+```{r rescale}
 library(vrm)
-library(dplyr)
 
-# Load example data (included with package)
-data(wss20, package = "vrm")
+# Rescale a simple vector
+x <- c(10, 20, 30, 40, 50)
+zero_one(x)
 
-# Rescale age to [0,1]
-wss20$age_scaled <- zero_one(wss20$age)
-
-# Bulk recode items using recode rules
-rules <- list(
-  list(column = "raw_item1", recode_rules = five_r, new_column = "item1"),
-  list(column = "raw_item2", recode_rules = four_r, new_column = "item2")
-)
-wss20 <- recodeList(wss20, rules)
+# Works with NAs
+zero_one(c(1, NA, 5, 10), na.rm = TRUE)
 ```
 
-## Propensity Score Weighting
+### Survey Recoding
 
-For observational pre/post designs, use `ps_weight()` to estimate inverse
-probability of treatment weights (IPTW):
+The package provides named recode vectors for common Likert scales:
 
-```{r}
-ps_out <- ps_weight(
-  wss20,
-  treatment = "prepost",
-  formula = ~ female + latino + white + black + college + age_scaled,
+```{r recode-vectors}
+# Reverse-code a 5-point scale
+five_mn
+
+# Normal 4-point scale
+four_n
+```
+
+Use `recodeColumn()` for a single column, or `recodeList()` to recode many columns at once:
+
+```{r recode-example}
+# Create sample data mimicking raw survey responses
+sample_df <- data.frame(
+  id = 1:5,
+  q1_raw = c(1, 2, 3, 4, 5),
+  q2_raw = c(4, 3, 2, 1, 4)
+)
+
+# Recode a single column (reverse 5-point)
+sample_df <- recodeColumn(sample_df,
+  column = "q1_raw",
+  recode_rules = five_r, colname = "q1"
+)
+sample_df[, c("q1_raw", "q1")]
+
+rules <- list(
+  list(column = "q1_raw", recode_rules = five_r, new_column = "q1_rev"),
+  list(column = "q2_raw", recode_rules = four_r, new_column = "q2_rev")
+)
+sample_df <- recodeList(sample_df, rules)
+sample_df
+```
+
+The function uses `dplyr::recode()` under the hood, but minimizes the need to write out the recoding rules manually using `case_when()`. 
+
+
+## 2. Exploratory Data Analysis
+
+For simple data checking and verification, use the EDA helpers. `summarize_missingness()` displays missing data patterns,
+`describe_numeric()` displays descriptive statistics for a numeric variable, `variable_characteristics()` displays variable characteristics, and `cor_table()` displays correlation tables.
+
+```{r eda}
+# Create example data
+set.seed(42)
+demo_df <- data.frame(
+  age = rnorm(200, 45, 15),
+  income = sample(c(1:5, NA), 200, replace = TRUE),
+  education = sample(c("HS", "BA", "MA", NA), 200, replace = TRUE),
+  score = rnorm(200, 50, 10)
+)
+
+# Summarize missingness
+summarize_missingness(demo_df)
+
+# Descriptive statistics for a numeric variable
+describe_numeric(demo_df$age)
+
+# Variable characteristics overview
+variable_characteristics(demo_df)
+
+# Correlation table (long format, for numeric columns)
+cor_tbl <- cor_table(demo_df[, c("age", "score")])
+head(cor_tbl)
+```
+
+## 3. Ordered Regression (Frequentist)
+
+`R` has numerous packages for fitting regression models. The goal is not to reinvent the wheel, but instead write  
+wrappers around existing packages to provide a unified interface.  First, ordered logit and probit models using the `MASS::polr()` wrappers:
+
+```{r ordered-models}
+
+# Create ordered factor data
+set.seed(123)
+n <- 200
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+latent <- 0.8 * x1 - 0.5 * x2 + rnorm(n)
+y <- cut(latent,
+  breaks = c(-Inf, -1, 0, 1, Inf),
+  labels = c("Poor", "Fair", "Good", "Excellent")
+)
+ord_df <- data.frame(y = y, x1 = x1, x2 = x2)
+
+# Fit ordered logit
+model_ologit <- fit_ordered_logit(y ~ x1 + x2, data = ord_df)
+
+# Predict classes
+preds <- predict_ordered(model_ologit, type = "class")
+table(preds)
+
+# Predicted probabilities for new data
+new_data <- data.frame(x1 = c(-1, 0, 1), x2 = c(0, 0, 0))
+predict_ordered(model_ologit, newdata = new_data, type = "probs")
+
+# Enhanced summary with p-values
+options(scipen = 6)  # Favor fixed/decimal notation
+model_summary <- summary_ordered(model_ologit)
+model_summary$coefficients
+```
+
+## 4. Frequentist Predicted Probabilities with Uncertainty
+
+
+Generating predictions from ordered logit models is more annoying than it should be, especially if you want to incorporate uncertainty. The `predict_ordinal_probs()` function generates predicted probabilities for each category, along with uncertainty estimates based on simulation draws from the model's parameter distributions.
+
+### Ordered Model Predictions
+
+```{r predict-ordinal}
+# Create a design matrix of scenarios
+design <- expand.grid(x1 = seq(-2, 2, by = 1), x2 = 0)
+
+# Predict category probabilities with uncertainty (1000 draws)
+pred_ord <- predict_ordinal_probs(design, model_ologit, n_draws = 1000)
+head(pred_ord)
+
+# Summarize across draws
+summary_ord <- summarize_predictions(pred_ord, prob_col = "probability")
+# Favor fixed/decimal notation for summary output
+options(scipen = 6)
+summary_ord
+```
+
+### Binary Logit Predictions
+
+```{r predict-logit}
+# Fit a binary logistic regression
+bin_df <- data.frame(
+  outcome = rbinom(300, 1, plogis(0.5 * x1[1:300 %% n + 1])),
+  x1 = x1[1:300 %% n + 1],
+  x2 = x2[1:300 %% n + 1]
+)
+model_logit <- glm(outcome ~ x1 + x2, data = bin_df, family = binomial)
+
+# Predicted probabilities with uncertainty
+design_bin <- data.frame(x1 = seq(-2, 2, 0.5), x2 = 0)
+pred_logit <- predict_logit_probs(design_bin, model_logit, n_draws = 500)
+summary_logit <- summarize_predictions(pred_logit, prob_col = "predicted_prob")
+summary_logit
+```
+
+## 5. Counterfactual Analysis (G-Computation)
+
+Create counterfactual datasets for g-computation style causal inference:
+
+```{r counterfactual}
+# Sample data with a binary treatment
+cf_df <- data.frame(
+  id = 1:6,
+  treatment = c(0, 0, 0, 1, 1, 1),
+  age = c(25, 35, 45, 30, 40, 50),
+  outcome = c(3, 4, 3, 5, 4, 5)
+)
+
+# Generate counterfactual data (flips treatment 0↔1)
+full_set <- generate_counterfactual_data(cf_df, treatment_var = "treatment")
+full_set[, c("id", "treatment", "original_treatment", "pre_condition")]
+```
+
+The `full_set` now has doubled rows: original observations tagged `"actual_treatment"`
+and counterfactual versions tagged `"hypothetical_treatment"`. This is designed to feed
+into `brms::add_epred_draws()` for posterior counterfactual predictions.
+
+## 6. Propensity Score Weighting
+
+Estimate inverse probability of treatment weights (IPTW) using logistic regression:
+
+```{r ps-weight}
+# Create treatment data
+set.seed(99)
+n_ps <- 500
+ps_df <- data.frame(
+  treatment = rbinom(n_ps, 1, 0.4),
+  age = rnorm(n_ps, 40, 10),
+  female = rbinom(n_ps, 1, 0.5),
+  college = rbinom(n_ps, 1, 0.3)
+)
+
+# Estimate propensity scores and IPTW weights (GLM only)
+ps_out <- ps_weight(ps_df,
+  treatment = "treatment",
+  formula = ~ age + female + college,
   methods = "glm"
 )
 
-# The weighted data is in ps_out$data
-wss20 <- ps_out$data
+# The weighted data includes ps and wts columns
+head(ps_out$data[, c("treatment", "age", "ps", "wts")])
+
+# Summary of weight distribution
+summary(ps_out$data$wts)
 ```
 
-## Model Fitting
+## 7. Visualization Theme
 
-Fit a Bayesian ordinal model with a pre/post × vote interaction:
+Apply the `vrm` publication theme to any ggplot:
+```{r theme-demo}
+library(ggplot2)
 
-```{r}
-fit_ord <- brms.ordinal(
-  dv = "contestation_value",
-  iv = "prepost * vote_trump",
-  data = wss20,
-  cores = 4,
-  chains = 4,
-  iter = 2000
-)
+p <- ggplot(
+  data.frame(x = rnorm(200), y = rnorm(200)),
+  aes(x, y)
+) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Example with mytheme()", x = "X Variable", y = "Y Variable") +
+  mytheme()
+p
 ```
 
-Or a linear model:
+## 8. Bayesian Workflow (brms)
 
-```{r}
-fit_lin <- brms.linear(
-  dv = "contestation_value",
-  iv = "prepost * vote_trump",
-  data = wss20,
-  cores = 4
-)
-```
+The following demonstrates the Bayesian workflow using `brms`. These chunks
+are not evaluated here because `brms` requires Stan compilation, but they
+show the intended usage.
 
-## Posterior Predictions
-
-Generate predicted means across conditions:
-
-```{r}
-preds <- posterior_means(
-  fit_lin,
-  iv_name = "prepost",
-  moderator = "vote_trump",
-  data = wss20
-)
-```
-
-## Counterfactual Analysis (G-Computation)
-
-Create counterfactual data and compute individual treatment effects:
-
-```{r}
-# Generate observed + counterfactual rows
-cf_data <- generate_counterfactual_data(wss20, treatment_var = "prepost")
-
-# Get posterior predictions for both conditions
+```{r bayesian-workflow, eval = FALSE}
+library(brms)
 library(tidybayes)
-preds_long <- cf_data %>%
-  add_epred_draws(fit_lin, ndraws = 500)
 
-# Calculate individual-level effects
+# Load package data
+data(wss20, package = "vrm")
+
+# Rescale age
+wss20$age_scaled <- zero_one(wss20$age)
+
+# Fit a Bayesian ordinal model
+fit_ord <- brms.ordinal(
+  data = wss20,
+  DV = "contestation_value",
+  IV = "prepost * vote_trump",
+  cores = 4, chains = 4, iter = 2000
+)
+
+# Or use the general-purpose brms_fit()
+fit_lin <- brms_fit(
+  data = wss20,
+  DV = "contestation_value",
+  IV = "prepost * vote_trump"
+)
+
+# Posterior predicted means
+preds <- posterior_means(fit_lin, xvar = "prepost", mvar = "vote_trump")
+
+# Posterior marginal effects
+me <- posterior_pme(fit_lin, xvar = "prepost", mvar = "vote_trump")
+
+# Counterfactual g-computation
+cf_data <- generate_counterfactual_data(wss20, treatment_var = "prepost")
+preds_long <- cf_data %>%
+  tidybayes::add_epred_draws(fit_lin, ndraws = 500)
 ind_effects <- calculate_individual_effects(
   preds_long,
   treatment_var = "prepost",
   group_vars = c("vote_trump")
 )
-```
 
-## Visualization
-
-```{r}
-library(ggplot2)
-
-# Marginal effects for ordinal model
+# Visualization
 ggMargins_categories(fit_ord, data = wss20)
-
-# Ridgeline plot of posterior draws
 gg_posterior_ridges(fit_lin, data = wss20)
 ```
 
@@ -131,8 +306,9 @@ gg_posterior_ridges(fit_lin, data = wss20)
 The typical `vrm` workflow is:
 
 1. **Recode** survey data with `recodeList()` / `zero_one()`
-2. **Weight** (if observational) with `ps_weight()`
-3. **Fit** models with `brms.ordinal()`, `brms.linear()`, etc.
-4. **Predict** with `posterior_means()` / `posterior_pme()`
-5. **Counterfactual** analysis with `generate_counterfactual_data()` + `calculate_individual_effects()`
-6. **Visualize** with `ggMargins_categories()`, sunflower plots, ridgeplots, etc.
+2. **Explore** with `summarize_missingness()`, `describe_numeric()`, `cor_table()`
+3. **Weight** (if observational) with `ps_weight()`
+4. **Fit** ordered models with `fit_ordered_logit()` or Bayesian models with `brms.ordinal()` / `brms_fit()`
+5. **Predict** with `predict_ordinal_probs()` / `predict_logit_probs()` or `posterior_means()` / `posterior_pme()`
+6. **Counterfactual** analysis with `generate_counterfactual_data()` + `calculate_individual_effects()`
+7. **Visualize** with `plotSunflower()`, `gg_posterior_ridges()`, `mytheme()`, etc.

@@ -7,7 +7,10 @@
 brms_fit(
   data,
   DV,
-  IV,
+  treatment = NULL,
+  moderator = NULL,
+  controls = NULL,
+  IV = NULL,
   family = gaussian(),
   chains = 4,
   iter = 2000,
@@ -22,8 +25,20 @@ brms_fit(
 
 \item{DV}{Character string naming the dependent variable.}
 
-\item{IV}{Character string or formula fragment for independent variable(s)
-(e.g., \code{"x1 + x2"} or \code{"x1 * x2 + x3"}).}
+\item{treatment}{Character string naming the treatment variable(s).
+Multiple treatments can be separated with \code{+}
+(e.g., \code{"prepost + violent_treat"}).}
+
+\item{moderator}{Optional character string naming the moderating variable.
+If supplied, an interaction \code{treatment * moderator} is created.
+Default \code{NULL}.}
+
+\item{controls}{Optional character string of control variables separated
+by \code{+} (e.g., \code{"female + college + age"}). Default \code{NULL}.}
+
+\item{IV}{Optional character string for the full right-hand side formula
+fragment. If supplied, \code{treatment}, \code{moderator}, and
+\code{controls} are ignored. This preserves backward compatibility.}
 
 \item{family}{A \pkg{brms} family object. Defaults to \code{gaussian()}.
 Common choices: \code{cumulative("logit")}, \code{bernoulli()},
@@ -46,18 +61,33 @@ A \code{brmsfit} object.
 }
 \description{
 A convenience wrapper around \code{\link[brms]{brm}} that accepts
-dependent and independent variables as character strings and builds
-the formula automatically. Supports any brms family.
+dependent variable, treatment, moderator, and controls as separate
+character strings and builds the formula automatically. Supports any
+brms family.
 }
 \examples{
 \dontrun{
-# Linear model
-m <- brms_fit(mtcars, "mpg", "hp + wt")
+# Using treatment / moderator / controls (recommended)
+m <- brms_fit(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + age"
+)
+# Produces: contestation_value ~ prepost * vote_trump + female + latino + college + age
+
+# Treatment only, no moderator
+m <- brms_fit(data = df, DV = "y", treatment = "x1")
+
+# Multiple treatments, no moderator
+m <- brms_fit(data = df, DV = "y", treatment = "x1 + x2", controls = "z")
+
+# Legacy IV syntax still works
+m <- brms_fit(data = mtcars, DV = "mpg", IV = "hp + wt")
 
 # Ordinal model
-m <- brms_fit(df, "rating", "treatment * group", family = cumulative("logit"))
-
-# Binary logistic model
-m <- brms_fit(df, "outcome", "x1 + x2", family = bernoulli())
+m <- brms_fit(df, DV = "rating", treatment = "treat", moderator = "group",
+              family = cumulative("logit"))
 }
 }

@@ -20,12 +20,12 @@
 
 
 recodeColumn <- function(data = df,
-                         column,  # identify column
+                         column, # identify column
                          recode_rules, # recode rules
                          colname) {
   data %>%
-    mutate(!!sym(colname) := case_when(
-      as.numeric(!!sym(column)) %in% names(recode_rules) ~ recode_rules[as.character(as.numeric(!!sym(column)))],
+    mutate(!!rlang::sym(colname) := dplyr::case_when(
+      as.numeric(!!rlang::sym(column)) %in% names(recode_rules) ~ recode_rules[as.character(as.numeric(!!rlang::sym(column)))],
       TRUE ~ NA
     ))
 }

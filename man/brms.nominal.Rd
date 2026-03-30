@@ -2,26 +2,69 @@
 % Please edit documentation in R/brmsNominal.R
 \name{brms.nominal}
 \alias{brms.nominal}
-\title{brms.nominal}
+\title{Fit a Bayesian Nominal (Multinomial) Regression Model}
 \usage{
 brms.nominal(
-  data = dataActive,
-  IV = IV,
-  DV = DV,
+  data,
+  DV,
+  treatment = NULL,
+  moderator = NULL,
+  controls = NULL,
+  IV = NULL,
   chains = 4,
   iter = 2000,
   warmup = 1000,
-  cores = 10,
+  cores = 4,
   seed = 1234,
   ...
 )
 }
 \arguments{
-\item{Specify}{DV, IV, data, and other arguments native to BRMS}
+\item{data}{A data.frame. Required -- no default.}
+
+\item{DV}{Character string naming the dependent variable.}
+
+\item{treatment}{Character string naming the treatment variable(s).
+Multiple treatments can be separated with \code{+}
+(e.g., \code{"prepost + violent_treat"}).}
+
+\item{moderator}{Optional character string naming the moderating variable.
+If supplied, an interaction \code{treatment * moderator} is created.
+Default \code{NULL}.}
+
+\item{controls}{Optional character string of control variables separated
+by \code{+} (e.g., \code{"female + college + age"}). Default \code{NULL}.}
+
+\item{IV}{Optional character string for the full right-hand side formula
+fragment. If supplied, \code{treatment}, \code{moderator}, and
+\code{controls} are ignored. This preserves backward compatibility.}
+
+\item{chains}{Number of MCMC chains. Default 4.}
+
+\item{iter}{Total iterations per chain. Default 2000.}
+
+\item{warmup}{Warmup iterations. Default 1000.}
+
+\item{cores}{Number of cores. Default 4.}
+
+\item{seed}{Random seed. Default 1234.}
+
+\item{...}{Additional arguments passed to \code{\link[brms]{brm}}.}
 }
 \value{
-brms model object
+A \code{brmsfit} object.
 }
 \description{
-Estimate a nominal regression model in \code{brms}
+A convenience wrapper around \code{\link{brms_fit}} for nominal
+(categorical/multinomial) regression.
+}
+\examples{
+\dontrun{
+fit <- brms.nominal(
+  data      = df,
+  DV        = "party",
+  treatment = "income",
+  controls  = "age + education"
+)
+}
 }

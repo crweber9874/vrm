@@ -1,4 +1,3 @@
-
 #' Launch BRMS Regression Shiny App
 #'
 #' @param sample_data Optional. If TRUE, loads mtcars into global environment
@@ -15,7 +14,6 @@
 #'   run_brms_app()
 #' }
 run_brms_app <- function(sample_data = FALSE, ...) {
-
   # Optionally load sample data
   if (sample_data) {
     # Load sample datasets into global environment
@@ -35,10 +33,11 @@ run_brms_app <- function(sample_data = FALSE, ...) {
   }
 
   # Find and run the app
-  appDir <- system.file("shinyapp", package = "yourpackage")
+  appDir <- system.file("shinyapp", package = "vrm")
   if (appDir == "") {
     stop("Could not find app directory. Try re-installing the package.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
 
   shiny::runApp(appDir, ...)
