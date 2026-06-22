@@ -38,7 +38,7 @@
 #' @param focal_var Character. Focal variable for marginal effects calculation.
 #'   Default: "prepost"
 #' @param focal_contrast Vector of length 2. Values of focal_var to contrast when
-#'   calculating marginal effects. Effect = focal_contrast[2] - focal_contrast[1].
+#'   calculating marginal effects. Effect = \code{focal_contrast[2] - focal_contrast[1]}.
 #'   Default: c(0, 1)
 #' @param colors Named vector. Colors for each category level. Names should match
 #'   category_levels. Default: c("1" = "lightgrey", "2" = "grey", "3" = "darkgrey",

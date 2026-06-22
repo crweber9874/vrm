@@ -19,13 +19,13 @@ generate_counterfactual_data(
 (e.g., "prepost", "treatment_status")}
 
 \item{flip_values}{Numeric vector of length 2. Values that will be swapped in counterfactual.
-Default: c(0, 1). The counterfactual flips from flip_values\link{1} to flip_values\link{2} and vice versa.}
+Default: c(0, 1). The counterfactual flips from \code{flip_values[1]} to \code{flip_values[2]} and vice versa.}
 
 \item{add_id_var}{Logical. Whether to add a respondent_id column for tracking individuals.
 Default: TRUE}
 
 \item{keep_original}{Logical. Whether to keep original treatment value in column named
-'original_\link{treatment_var}'. Default: TRUE}
+\code{original_[treatment_var]}. Default: TRUE}
 }
 \value{
 A data frame with rows doubled: original data tagged with pre_condition = "actual_treatment"

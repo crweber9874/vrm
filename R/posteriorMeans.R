@@ -34,31 +34,31 @@ posterior_means <- function(
   data <- model$data
   cols_to_average <- setdiff(names(data)[-1], c(xvar, mvar))
   data_grid <- data %>%
-    select(all_of(cols_to_average)) %>%
-    summarize(across(everything(), mean)) %>%
-    expand_grid(
+    dplyr::select(dplyr::all_of(cols_to_average)) %>%
+    dplyr::summarize(dplyr::across(dplyr::everything(), mean)) %>%
+    tidyr::expand_grid(
       !!xvar := xval,
       !!mvar := mval
     ) %>%
-    add_epred_draws(model)
+    tidybayes::add_epred_draws(model)
   if (model$family[[1]] == "categorical" |
     model$family[[1]] == "cumulative") {
     plot <- data_grid %>%
-      group_by(!!sym(xvar), !!sym(mvar), .category) %>%
-      summarize(
+      dplyr::group_by(!!rlang::sym(xvar), !!rlang::sym(mvar), .category) %>%
+      dplyr::summarize(
         mean = mean(.epred),
-        lower = quantile(.epred, 0.025),
-        upper = quantile(.epred, 0.975)
+        lower = stats::quantile(.epred, 0.025),
+        upper = stats::quantile(.epred, 0.975)
       )
   }
   if (model$family[[1]] == "bernoulli" |
     model$family[[1]] == "gaussian") {
     plot <- data_grid %>%
-      group_by(!!sym(xvar), !!sym(mvar)) %>%
-      summarize(
+      dplyr::group_by(!!rlang::sym(xvar), !!rlang::sym(mvar)) %>%
+      dplyr::summarize(
         mean = mean(.epred),
-        lower = quantile(.epred, 0.025),
-        upper = quantile(.epred, 0.975)
+        lower = stats::quantile(.epred, 0.025),
+        upper = stats::quantile(.epred, 0.975)
       )
   }
   return(plot)

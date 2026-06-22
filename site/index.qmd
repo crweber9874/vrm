@@ -1,0 +1,39 @@
+---
+title: "vrm"
+subtitle: "Visualization, Regression, and Marginal Effects Toolkit"
+---
+
+> _Placeholder: one or two sentences describing what `vrm` is and who it is for. Fill this in._
+
+`vrm` provides a unified toolkit for Bayesian and frequentist regression
+workflows in R, wrapping [`brms`](https://paulbuerkner.com/brms/) for ordinal,
+linear, logit, and nominal models with consistent interfaces for posterior
+prediction, marginal effects, counterfactual analysis, propensity-score
+weighting, data recoding, and publication-quality visualization.
+
+## Get the full documentation
+
+📖 **[Read the documentation book →](book/index.html)**
+
+> _Placeholder: a sentence pointing readers to the book and what they'll find there._
+
+## Install
+
+```r
+# From GitHub
+devtools::install_github("crweber9874/vrm")
+```
+
+## Quick start
+
+```r
+library(vrm)
+
+# Fit a Bayesian ordinal model
+fit <- brms.ordinal(dv = "y", iv = "x * group", data = mydata, cores = 4)
+
+# Posterior predicted means with an interaction
+preds <- posterior_means(fit, iv_name = "x", moderator = "group", data = mydata)
+```
+
+> _Placeholder: add a sentence about where to go next._

@@ -29,28 +29,28 @@ posterior_pme <- function(model = burn_flag,
   cols_to_average <- setdiff(names(data)[-1], c(xvar, mvar))
 
   data_grid <- data %>%
-    select(all_of(cols_to_average)) %>%
-    summarize(across(everything(), mean)) %>%
-    expand_grid(
+    dplyr::select(dplyr::all_of(cols_to_average)) %>%
+    dplyr::summarize(dplyr::across(dplyr::everything(), mean)) %>%
+    tidyr::expand_grid(
       !!xvar := xrange,
       !!mvar := mrange
     ) %>%
-    add_epred_draws(model)
+    tidybayes::add_epred_draws(model)
 
   x_hi <- xrange[2]
   x_lo <- xrange[1]
 
   t1 <-
     data_grid %>%
-    filter(!!sym(xvar) == x_hi) %>%
+    dplyr::filter(!!rlang::sym(xvar) == x_hi) %>%
     subset(select = ".epred")
 
   t2 <- data_grid %>%
-    filter(!!sym(xvar) == x_lo) %>%
+    dplyr::filter(!!rlang::sym(xvar) == x_lo) %>%
     subset(select = ".epred")
 
   dat <- data_grid %>%
-    filter(!!sym(xvar) == x_hi)
+    dplyr::filter(!!rlang::sym(xvar) == x_hi)
 
   dat$me <- t1$.epred - t2$.epred
 
@@ -58,20 +58,20 @@ posterior_pme <- function(model = burn_flag,
     model$family[[1]] == "cumulative") {
     plot <- dat %>%
       subset(select = c(mvar, ".category", "me")) %>%
-      group_by(!!sym(mvar), .category)
+      dplyr::group_by(!!rlang::sym(mvar), .category)
   }
   if (model$family[[1]] == "bernoulli" |
     model$family[[1]] == "gaussian") {
     plot <- dat %>%
       subset(select = c(mvar, "me")) %>%
-      group_by(!!sym(mvar))
+      dplyr::group_by(!!rlang::sym(mvar))
   }
 
   plot <- plot %>%
-    summarize(
+    dplyr::summarize(
       mean = mean(me),
-      lower = quantile(me, 0.025),
-      upper = quantile(me, 0.975)
+      lower = stats::quantile(me, 0.025),
+      upper = stats::quantile(me, 0.975)
     )
   return(plot)
 }

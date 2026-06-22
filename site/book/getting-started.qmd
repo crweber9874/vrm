@@ -1,0 +1,27 @@
+# Getting started
+
+> _Placeholder: a sentence introducing installation and the minimal example._
+
+## Installation
+
+```r
+devtools::install_github("crweber9874/vrm")
+library(vrm)
+```
+
+## A minimal workflow
+
+> _Placeholder: describe the example dataset and what the model below estimates._
+
+```r
+fit   <- brms.ordinal(dv = "y", iv = "x * group", data = mydata, cores = 4)
+preds <- posterior_means(fit, iv_name = "x", moderator = "group", data = mydata)
+```
+
+## Recoding helpers
+
+> _Placeholder: one sentence on the recoding utilities and when to reach for them._
+
+```r
+mydata$x01 <- zero_one(mydata$x)   # rescale to [0, 1]
+```

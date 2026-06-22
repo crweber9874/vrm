@@ -7,11 +7,11 @@
 #' @param treatment_var Character. Name of the treatment/exposure variable to flip
 #'   (e.g., "prepost", "treatment_status")
 #' @param flip_values Numeric vector of length 2. Values that will be swapped in counterfactual.
-#'   Default: c(0, 1). The counterfactual flips from flip_values[1] to flip_values[2] and vice versa.
+#'   Default: c(0, 1). The counterfactual flips from \code{flip_values[1]} to \code{flip_values[2]} and vice versa.
 #' @param add_id_var Logical. Whether to add a respondent_id column for tracking individuals.
 #'   Default: TRUE
 #' @param keep_original Logical. Whether to keep original treatment value in column named
-#'   'original_[treatment_var]'. Default: TRUE
+#'   \code{original_[treatment_var]}. Default: TRUE
 #'
 #' @return A data frame with rows doubled: original data tagged with pre_condition = "actual_treatment"
 #'   and counterfactual data tagged with pre_condition = "hypothetical_treatment"

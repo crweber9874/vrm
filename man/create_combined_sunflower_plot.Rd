@@ -90,7 +90,7 @@ Default: c("prepost", "category")}
 Default: "prepost"}
 
 \item{focal_contrast}{Vector of length 2. Values of focal_var to contrast when
-calculating marginal effects. Effect = focal_contrast\link{2} - focal_contrast\link{1}.
+calculating marginal effects. Effect = \code{focal_contrast[2] - focal_contrast[1]}.
 Default: c(0, 1)}
 
 \item{colors}{Named vector. Colors for each category level. Names should match

@@ -5,10 +5,10 @@
 #'
 #' @param predictions_long Data frame in long format from tidybayes::add_epred_draws()
 #'   Must contain: .draw, .epred (or similar prediction column), pre_condition,
-#'   respondent_id, and original_[treatment_var]
+#'   respondent_id, and `original_[treatment_var]`
 #' @param pred_col Character. Name of prediction column. Default: ".epred"
 #' @param treatment_var Character. Name of treatment variable. Used to locate
-#'   'original_[treatment_var]' column for direction correction. Default: "prepost"
+#'   the `original_[treatment_var]` column for direction correction. Default: "prepost"
 #' @param group_vars Character vector. Names of grouping variables to retain
 #'   (e.g., c("vote_trump", ".category")). Default: NULL (no grouping)
 #' @param effect_name Character. Name for the output effect column. Default: "treatment_effect"

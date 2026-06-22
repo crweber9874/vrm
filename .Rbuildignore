@@ -8,3 +8,6 @@
 ^vignettes/articles$
 ^doc$
 ^Meta$
+^data/README\.md$
+^data-raw$
+^site$

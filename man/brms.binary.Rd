@@ -11,6 +11,7 @@ brms.binary(
   moderator = NULL,
   controls = NULL,
   IV = NULL,
+  weights = NULL,
   chains = 4,
   iter = 2000,
   warmup = 1000,
@@ -38,6 +39,10 @@ by \code{+} (e.g., \code{"female + college + age"}). Default \code{NULL}.}
 \item{IV}{Optional character string for the full right-hand side formula
 fragment. If supplied, \code{treatment}, \code{moderator}, and
 \code{controls} are ignored. This preserves backward compatibility.}
+
+\item{weights}{Optional character string naming a column of observation
+weights in \code{data}. When supplied, the formula LHS becomes
+\code{DV | weights(wts_col)}. Default \code{NULL} (unweighted).}
 
 \item{chains}{Number of MCMC chains. Default 4.}
 

@@ -3,6 +3,15 @@
 .Rdata
 .httr-oauth
 .DS_Store
+.vscode/
 inst/doc
 /doc/
 /Meta/
+
+# Quarto site build output
+site/_site/
+site/book/_book/
+site/.quarto/
+site/book/.quarto/
+.quarto/
+_publish.yml

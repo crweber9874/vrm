@@ -29,6 +29,8 @@
 #' predictions_long <- predict_logit_probs(design_matrix, model,
 #'                                          n_draws = 1000,
 #'                                          return_long = TRUE)
+#' summary_df <- summarize_predictions(predictions_long)
+#' }
 #' @export
 summarize_predictions <- function(predictions_long,
                                   prob_col = NULL,

@@ -1,0 +1,27 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "!book/"
+
+website:
+  title: "vrm"
+  description: "Visualization, Regression, and Marginal Effects Toolkit"
+  navbar:
+    background: dark
+    left:
+      - href: index.qmd
+        text: Home
+      - href: book/index.html
+        text: Documentation (Book)
+    right:
+      - icon: github
+        href: https://github.com/crweber9874/vrm
+        aria-label: GitHub
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true

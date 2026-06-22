@@ -1,0 +1,27 @@
+# Model fitting
+
+> _Placeholder: a sentence on the modeling philosophy (Bayesian-first, brms
+> wrappers with a consistent interface)._
+
+## brms wrappers
+
+| Function | Description |
+|---|---|
+| `brms.ordinal()` | Ordinal regression via brms |
+| `brms.linear()`  | Linear regression via brms |
+| `brms.binary()`  | Binary logit via brms |
+| `brms.nominal()` | Nominal / multinomial via brms |
+| `fit_brms_battery()` | Batch estimation of several models |
+
+> _Placeholder: describe the shared `dv` / `iv` / `data` interface and any
+> defaults (priors, chains, cores)._
+
+## Frequentist alternatives
+
+| Function | Description |
+|---|---|
+| `fit_ordered_logit()`  | Ordered logit (MASS::polr) |
+| `fit_ordered_probit()` | Ordered probit |
+
+> _Placeholder: note when a frequentist fit is appropriate and report
+> `n_obs` / `n_miss` alongside estimates._

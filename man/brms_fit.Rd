@@ -12,6 +12,7 @@ brms_fit(
   controls = NULL,
   IV = NULL,
   family = gaussian(),
+  weights = NULL,
   chains = 4,
   iter = 2000,
   warmup = 1000,
@@ -43,6 +44,10 @@ fragment. If supplied, \code{treatment}, \code{moderator}, and
 \item{family}{A \pkg{brms} family object. Defaults to \code{gaussian()}.
 Common choices: \code{cumulative("logit")}, \code{bernoulli()},
 \code{categorical()}, \code{gaussian()}.}
+
+\item{weights}{Optional character string naming a column of observation
+weights in \code{data}. When supplied, the formula LHS becomes
+\code{DV | weights(wts_col)}. Default \code{NULL} (unweighted).}
 
 \item{chains}{Number of MCMC chains. Default 4.}
 
@@ -77,17 +82,17 @@ m <- brms_fit(
 )
 # Produces: contestation_value ~ prepost * vote_trump + female + latino + college + age
 
-# Treatment only, no moderator
-m <- brms_fit(data = df, DV = "y", treatment = "x1")
-
-# Multiple treatments, no moderator
-m <- brms_fit(data = df, DV = "y", treatment = "x1 + x2", controls = "z")
+# With IPTW weights
+m <- brms_fit(
+  data      = wss20,
+  DV        = "contestation_value",
+  treatment = "prepost",
+  moderator = "vote_trump",
+  controls  = "female + latino + college + age",
+  weights   = "wts"
+)
 
 # Legacy IV syntax still works
 m <- brms_fit(data = mtcars, DV = "mpg", IV = "hp + wt")
-
-# Ordinal model
-m <- brms_fit(df, DV = "rating", treatment = "treat", moderator = "group",
-              family = cumulative("logit"))
 }
 }

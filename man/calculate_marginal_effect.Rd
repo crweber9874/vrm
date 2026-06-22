@@ -21,7 +21,7 @@ predict_ordinal_probs or predict_logit_probs), must include 'draw' column}
 \item{focal_var}{Character. Name of the focal variable for marginal effect}
 
 \item{focal_contrast}{Vector of length 2. Values of focal_var to contrast
-(e.g., c(0, 1) or c("pre", "post")). Effect = focal_contrast\link{2} - focal_contrast\link{1}}
+(e.g., c(0, 1) or c("pre", "post")). Effect = \code{focal_contrast[2] - focal_contrast[1]}}
 
 \item{moderator}{Character. Optional name of moderating variable. Default NULL.}
 

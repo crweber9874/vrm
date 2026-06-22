@@ -1,0 +1,28 @@
+# Posterior prediction & marginal effects
+
+> _Placeholder: a sentence on how vrm turns fitted models into interpretable
+> quantities (predicted means, marginal effects, counterfactuals)._
+
+## Predicted means and marginal effects
+
+| Function | Description |
+|---|---|
+| `posterior_means()` | Posterior predicted means, including interactions |
+| `posterior_pme()`   | Predictive marginal effects |
+| `posterior_pred_diff()` | Differences between predicted scenarios |
+
+```r
+preds <- posterior_means(fit, iv_name = "x", moderator = "group", data = mydata)
+```
+
+> _Placeholder: explain what the returned object contains and how to summarize
+> it (point estimate + credible interval)._
+
+## Counterfactuals & weighting
+
+| Function | Description |
+|---|---|
+| `generate_counterfactual_data()` | g-computation scenarios |
+| `ps_weight()` | Propensity-score weights (GLM, GBM, random forest) |
+
+> _Placeholder: one sentence on the counterfactual / IPTW workflow._

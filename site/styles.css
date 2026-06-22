@@ -1,0 +1,8 @@
+/* vrm site styles — tweak as needed */
+.navbar-brand { font-weight: 700; letter-spacing: 0.02em; }
+
+blockquote {
+  border-left: 3px solid #b8c4d0;
+  color: #5b6b7b;
+  font-style: italic;
+}

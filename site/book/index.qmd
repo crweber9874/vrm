@@ -1,0 +1,11 @@
+# Preface {.unnumbered}
+
+> _Placeholder: a sentence or two on the purpose of this book and what readers
+> will be able to do after reading it._
+
+This book documents the `vrm` package: a general-purpose toolkit for Bayesian
+and frequentist regression analysis workflows. The chapters move from
+installation and basic usage through model fitting, posterior prediction and
+marginal effects, and finally visualization.
+
+[← Back to the vrm home page](../index.html)

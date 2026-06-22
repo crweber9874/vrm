@@ -1,0 +1,20 @@
+# Visualization
+
+> _Placeholder: a sentence on the plotting philosophy (publication-ready,
+> ggplot2-based, consistent theming via `mytheme()`)._
+
+## Plot functions
+
+| Function | Description |
+|---|---|
+| `plotSunflower()` / `plotConnectedSunflower()` | Sunflower scatter plots |
+| `gg_posterior_ridges()` | Ridgeline plots of posterior draws |
+| `plotMarginalEffects()` / `plot_marginal_effects()` | Marginal-effect panels |
+| `plotDots()` | Forest / dot plots |
+
+```r
+gg_posterior_ridges(fit, var = "x")
+```
+
+> _Placeholder: show one figure and describe how to customize it (theme,
+> palette, facets)._

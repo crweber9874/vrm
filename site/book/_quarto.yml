@@ -1,0 +1,21 @@
+project:
+  type: book
+  output-dir: ../_site/book
+
+book:
+  title: "vrm: Documentation"
+  subtitle: "Visualization, Regression, and Marginal Effects Toolkit"
+  author: "Christopher Weber"
+  search: true
+  repo-url: https://github.com/crweber9874/vrm
+  chapters:
+    - index.qmd
+    - getting-started.qmd
+    - model-fitting.qmd
+    - posterior-prediction.qmd
+    - visualization.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
