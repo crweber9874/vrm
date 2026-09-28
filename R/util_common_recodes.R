@@ -124,3 +124,15 @@ binary_01 <- c("1" = 0, "2" = 1)
 zero_one <- function(x, na.rm = TRUE) {
   (x - min(x, na.rm = na.rm)) / (max(x, na.rm = na.rm) - min(x, na.rm = na.rm))
 }
+
+#' Rescale to the unit interval (deprecated spelling)
+#'
+#' `zero.one()` is retained for backward compatibility with existing analysis
+#' scripts. It delegates to [zero_one()], which is the preferred spelling; the
+#' dotted name is easily mistaken for S3 dispatch on a `zero` generic.
+#'
+#' @param x A numeric vector.
+#' @return A numeric vector rescaled to `[0, 1]`.
+#' @seealso [zero_one()]
+#' @export
+zero.one <- function(x) zero_one(x, na.rm = TRUE)

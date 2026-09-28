@@ -60,7 +60,7 @@ Default: c("1" = "Strongly Not Support", "2" = "Do Not Support",
 
 \item{x_label}{Label for the x-axis. Default: ""}
 
-\item{legend_title}{Title for the legend. Default: "Response\nCategory"}
+\item{legend_title}{Title for the legend. Default: \code{"Response\\\\nCategory"}}
 
 \item{y_limits}{Numeric vector of length 2 specifying y-axis limits.
 Default: c(0, 0.5)}

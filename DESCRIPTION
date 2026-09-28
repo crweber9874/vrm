@@ -28,6 +28,7 @@ Suggests:
     brms,
     tidybayes,
     vayr,
+    lavaan,
     MASS,
     ggridges,
     ggExtra,

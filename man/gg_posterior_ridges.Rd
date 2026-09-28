@@ -63,7 +63,7 @@ values = labels.}
 vertical overlap between ridges.}
 
 \item{quantile_lines}{Logical. If \code{TRUE}, draw median and
-50\\% quantile lines inside each ridge.}
+50\% quantile lines inside each ridge.}
 
 \item{...}{Additional arguments forwarded to
 \code{ggridges::geom_density_ridges()}.}

@@ -23,7 +23,7 @@
 #' @param subtitle Subtitle for the plot. Default: ""
 #' @param y_label Label for the y-axis. Default: "Predicted Probability"
 #' @param x_label Label for the x-axis. Default: ""
-#' @param legend_title Title for the legend. Default: "Response\nCategory"
+#' @param legend_title Title for the legend. Default: `"Response\\nCategory"`
 #' @param y_limits Numeric vector of length 2 specifying y-axis limits.
 #'   Default: c(0, 0.5)
 #' @param y_breaks Numeric vector specifying y-axis break points.

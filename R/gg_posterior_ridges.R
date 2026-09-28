@@ -34,7 +34,7 @@
 #' @param scale Numeric. \pkg{ggridges} \code{scale} parameter controlling
 #'   vertical overlap between ridges.
 #' @param quantile_lines Logical. If \code{TRUE}, draw median and
-#'   50\% quantile lines inside each ridge.
+#'   50% quantile lines inside each ridge.
 #' @param ... Additional arguments forwarded to
 #'   \code{ggridges::geom_density_ridges()}.
 #'
