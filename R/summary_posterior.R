@@ -48,14 +48,15 @@
 #'   fmt_number(columns = starts_with(c("mean", "sd", "lower", "upper")), decimals = 3)
 #' }
 #'
+#' @importFrom dplyr summarise group_by across all_of
+#' @importFrom rlang .data
+#' @importFrom stats median sd quantile
 #' @export
 summarize_treatment_effects <- function(effects_data,
                                         effect_var = "treatment_effect",
                                         group_vars = NULL,
                                         conf_level = 0.95,
                                         draw_level = TRUE) {
-
-  require(dplyr)
 
   # Input validation
   if (!effect_var %in% names(effects_data)) {

@@ -110,19 +110,40 @@ binary_01 <- c("1" = 0, "2" = 1)
 
 #' Rescale Variable to 0-1 Range
 #'
-#' Rescales a numeric vector to range from 0 to 1 using min-max normalization.
+#' Rescales a numeric vector to the unit interval. By default the observed
+#' minimum and maximum are used; supply `lo`/`hi` to rescale against the
+#' theoretical scale bounds instead, which keeps scores comparable across
+#' waves and samples.
 #'
 #' @param x A numeric vector.
 #' @param na.rm Logical; should missing values be removed? Default is TRUE.
+#' @param lo,hi Optional theoretical scale bounds. Default to the observed
+#'   minimum and maximum of `x`.
 #'
-#' @return A numeric vector rescaled to \code{[0, 1]}.
+#' @return A numeric vector rescaled to \code{[0, 1]}. Returns `NA` with a
+#'   warning when `lo == hi`.
 #' @export
 #'
 #' @examples
 #' zero_one(c(10, 20, 30, 40, 50))
 #' # [1] 0.00 0.25 0.50 0.75 1.00
-zero_one <- function(x, na.rm = TRUE) {
-  (x - min(x, na.rm = na.rm)) / (max(x, na.rm = na.rm) - min(x, na.rm = na.rm))
+#' zero_one(c(2, 3, 4), lo = 1, hi = 5)
+#' # [1] 0.25 0.50 0.75
+#' @importFrom rlang %||%
+zero_one <- function(x, na.rm = TRUE, lo = NULL, hi = NULL) {
+  if (!is.numeric(x)) stop("`x` must be numeric.")
+  lo <- lo %||% min(x, na.rm = na.rm)
+  hi <- hi %||% max(x, na.rm = na.rm)
+  if (!is.finite(lo) || !is.finite(hi)) return(rep(NA_real_, length(x)))
+  if (hi < lo) stop("`hi` must be greater than `lo`.")
+  if (hi == lo) {
+    warning("`x` has no range (lo == hi); returning NA.")
+    return(rep(NA_real_, length(x)))
+  }
+  if (any(x < lo | x > hi, na.rm = TRUE)) {
+    warning("Some values of `x` fall outside [lo, hi].")
+  }
+  (x - lo) / (hi - lo)
 }
 
 #' Rescale to the unit interval (deprecated spelling)

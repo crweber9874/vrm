@@ -4,20 +4,29 @@
 \alias{zero_one}
 \title{Rescale Variable to 0-1 Range}
 \usage{
-zero_one(x, na.rm = TRUE)
+zero_one(x, na.rm = TRUE, lo = NULL, hi = NULL)
 }
 \arguments{
 \item{x}{A numeric vector.}
 
 \item{na.rm}{Logical; should missing values be removed? Default is TRUE.}
+
+\item{lo, hi}{Optional theoretical scale bounds. Default to the observed
+minimum and maximum of \code{x}.}
 }
 \value{
-A numeric vector rescaled to \code{[0, 1]}.
+A numeric vector rescaled to \code{[0, 1]}. Returns \code{NA} with a
+warning when \code{lo == hi}.
 }
 \description{
-Rescales a numeric vector to range from 0 to 1 using min-max normalization.
+Rescales a numeric vector to the unit interval. By default the observed
+minimum and maximum are used; supply \code{lo}/\code{hi} to rescale against the
+theoretical scale bounds instead, which keeps scores comparable across
+waves and samples.
 }
 \examples{
 zero_one(c(10, 20, 30, 40, 50))
 # [1] 0.00 0.25 0.50 0.75 1.00
+zero_one(c(2, 3, 4), lo = 1, hi = 5)
+# [1] 0.25 0.50 0.75
 }

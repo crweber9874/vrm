@@ -7,10 +7,12 @@
 #'   - One or more grouping variables (e.g., scenario characteristics)
 #'   - A column with predicted probabilities from different draws
 #' @param prob_col Character. Name of the column containing predicted probabilities.
-#'   Default is "predicted_prob" for logistic regression or "probability" for ordinal.
+#'   If NULL, the first of "predicted_prob", "probability", ".epred",
+#'   ".prediction", ".linpred", ".value" found in the data is used.
 #' @param group_vars Character vector of variable names to group by when calculating
-#'   summary statistics. If NULL (default), will group by all columns except the
-#'   probability column and any column named "draw".
+#'   summary statistics. If NULL (default), groups by all columns except the
+#'   probability column and draw identifiers ("draw", ".draw", ".chain",
+#'   ".iteration", ".row"), so tidybayes output is handled correctly.
 #' @param conf_level Numeric. Confidence level for intervals. Default is 0.95.
 #' @param quantiles Numeric vector. Additional quantiles to calculate beyond the
 #'   confidence interval. Default is NULL.
@@ -31,14 +33,15 @@
 #'                                          return_long = TRUE)
 #' summary_df <- summarize_predictions(predictions_long)
 #' }
+#' @importFrom dplyr summarise group_by across all_of left_join
+#' @importFrom rlang .data :=
+#' @importFrom stats median sd quantile
 #' @export
 summarize_predictions <- function(predictions_long,
                                   prob_col = NULL,
                                   group_vars = NULL,
                                   conf_level = 0.95,
                                   quantiles = NULL) {
-
-  require(dplyr)
 
   # Input validation
   if (!is.data.frame(predictions_long)) {
@@ -51,11 +54,10 @@ summarize_predictions <- function(predictions_long,
 
   # Auto-detect probability column if not specified
   if (is.null(prob_col)) {
-    if ("predicted_prob" %in% names(predictions_long)) {
-      prob_col <- "predicted_prob"
-    } else if ("probability" %in% names(predictions_long)) {
-      prob_col <- "probability"
-    } else {
+    candidates <- c("predicted_prob", "probability", ".epred",
+                    ".prediction", ".linpred", ".value")
+    prob_col <- intersect(candidates, names(predictions_long))[1]
+    if (is.na(prob_col)) {
       stop("Could not auto-detect probability column. Please specify prob_col parameter.\n",
            "Available columns: ", paste(names(predictions_long), collapse = ", "))
     }
@@ -67,9 +69,8 @@ summarize_predictions <- function(predictions_long,
          "Available columns: ", paste(names(predictions_long), collapse = ", "))
   }
 
-  # If group_vars is NULL, auto-detect: use all columns except prob_col and "draw"
   if (is.null(group_vars)) {
-    exclude_cols <- c(prob_col, "draw")
+    exclude_cols <- c(prob_col, "draw", ".draw", ".chain", ".iteration", ".row")
     group_vars <- setdiff(names(predictions_long), exclude_cols)
 
     if (length(group_vars) == 0) {

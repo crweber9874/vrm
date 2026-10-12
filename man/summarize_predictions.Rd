@@ -20,11 +20,13 @@ summarize_predictions(
 }}
 
 \item{prob_col}{Character. Name of the column containing predicted probabilities.
-Default is "predicted_prob" for logistic regression or "probability" for ordinal.}
+If NULL, the first of "predicted_prob", "probability", ".epred",
+".prediction", ".linpred", ".value" found in the data is used.}
 
 \item{group_vars}{Character vector of variable names to group by when calculating
-summary statistics. If NULL (default), will group by all columns except the
-probability column and any column named "draw".}
+summary statistics. If NULL (default), groups by all columns except the
+probability column and draw identifiers ("draw", ".draw", ".chain",
+".iteration", ".row"), so tidybayes output is handled correctly.}
 
 \item{conf_level}{Numeric. Confidence level for intervals. Default is 0.95.}
 

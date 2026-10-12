@@ -35,6 +35,9 @@
 #'   vertical overlap between ridges.
 #' @param quantile_lines Logical. If \code{TRUE}, draw median and
 #'   50% quantile lines inside each ridge.
+#' @param value Character. Column holding the draws mapped to the x-axis.
+#'   Default \code{".epred"}; use e.g. \code{"treatment_effect"} for
+#'   effect draws.
 #' @param ... Additional arguments forwarded to
 #'   \code{ggridges::geom_density_ridges()}.
 #'
@@ -75,7 +78,11 @@ gg_posterior_ridges <- function(draws,
                                alpha = 0.5,
                                scale = 0.9,
                                quantile_lines = TRUE,
+                               value = ".epred",
                                ...) {
+  if (!value %in% names(draws)) {
+    stop("Column '", value, "' not found in `draws`.")
+  }
   # Filter to a specific response category (ordinal / multinomial)
   if (!is.null(category) && ".category" %in% names(draws)) {
     draws <- dplyr::filter(draws, .category == category)
@@ -99,7 +106,7 @@ gg_posterior_ridges <- function(draws,
   p <- ggplot2::ggplot(
     df,
     ggplot2::aes(
-      x    = .epred,
+      x    = .data[[value]],
       y    = .data[[ridge_var]],
       fill = .data[[fill_var]]
     )

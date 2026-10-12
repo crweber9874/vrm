@@ -19,6 +19,7 @@ gg_posterior_ridges(
   alpha = 0.5,
   scale = 0.9,
   quantile_lines = TRUE,
+  value = ".epred",
   ...
 )
 }
@@ -64,6 +65,10 @@ vertical overlap between ridges.}
 
 \item{quantile_lines}{Logical. If \code{TRUE}, draw median and
 50\% quantile lines inside each ridge.}
+
+\item{value}{Character. Column holding the draws mapped to the x-axis.
+Default \code{".epred"}; use e.g. \code{"treatment_effect"} for
+effect draws.}
 
 \item{...}{Additional arguments forwarded to
 \code{ggridges::geom_density_ridges()}.}
