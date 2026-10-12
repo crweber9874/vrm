@@ -8,7 +8,6 @@
 #' @param colname specify the new column name
 #' @importFrom dplyr %>% select mutate row_number group_by ungroup
 #' @importFrom tidyr pivot_longer
-#' @importFrom readr parse_number
 #'
 #' @return The data frame with recoded column
 #' #'

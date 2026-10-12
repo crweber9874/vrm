@@ -19,17 +19,18 @@ Imports:
     stats,
     dplyr,
     tidyr,
-    readr,
     ggplot2,
     rlang,
     tibble,
-    purrr
+    purrr,
+    tidyselect,
+    MASS
 Suggests:
     brms,
+    posterior,
     tidybayes,
     vayr,
     lavaan,
-    MASS,
     ggridges,
     ggExtra,
     patchwork,

@@ -21,7 +21,7 @@ ggMargins_categories(
 )
 }
 \arguments{
-\item{data}{Dataframe containing posterior predictions, typically from \code{electoralContestation::posterior_me}
+\item{data}{Dataframe containing posterior predictions, typically from \code{\link[=posterior_pme]{posterior_pme()}}
 or similar prediction functions. It must include columns named \code{.category} (for the
 response categories), \code{mean}, \code{lower}, \code{upper} (for credible intervals), and the column
 specified by \code{mvar} (the moderator variable). Defaults to \code{plot_dat}.}

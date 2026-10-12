@@ -5,7 +5,7 @@
 #' from a `brms` model, specifically designed for cumulative or categorical outcomes.
 #' The data come from the 2020 Western States Survey.
 #'
-#' @param data Dataframe containing posterior predictions, typically from `electoralContestation::posterior_me`
+#' @param data Dataframe containing posterior predictions, typically from [posterior_pme()]
 #'   or similar prediction functions. It must include columns named `.category` (for the
 #'   response categories), `mean`, `lower`, `upper` (for credible intervals), and the column
 #'   specified by `mvar` (the moderator variable). Defaults to `plot_dat`.
